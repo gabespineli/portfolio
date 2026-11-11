@@ -1,0 +1,1 @@
+{"name":"gab-espineli-portfolio","private":true,"type":"module","scripts":{"build":"node build.mjs","start":"node serve.mjs","test":"node verify.mjs && node verify-ui.mjs"}}
