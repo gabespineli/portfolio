@@ -138,3 +138,19 @@ export function assistedStroke(vx: number, vy = 0) {
     vy: speed * Math.sin(angle),
   };
 }
+
+// Thumb drags use CSS-pixel travel, not elapsed time: a slow drag is a putt
+// too. Positive travel retains the existing pull-back-and-release gesture.
+export function thumbStroke(dx: number, dy: number) {
+  if (
+    !Number.isFinite(dx) ||
+    !Number.isFinite(dy) ||
+    Math.abs(dx) < 10 ||
+    Math.abs(dy) > Math.abs(dx) * 1.5
+  )
+    return null;
+  return {
+    vx: -Math.min(4.2, 1.9 + Math.abs(dx) / 35),
+    vy: Math.max(-0.25, Math.min(0.25, dy / 300)),
+  };
+}

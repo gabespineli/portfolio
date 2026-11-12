@@ -5,6 +5,7 @@ import {
   step,
   impact,
   assistedStroke,
+  thumbStroke,
   course,
 } from "../src/golf/physics";
 import { simulate } from "../worker/index";
@@ -82,4 +83,16 @@ it("captures deeply overlapping fast entries consistently across frame rates", (
       expect(ball.sunk).toBe(true);
     }
   }
+});
+
+it("accepts slow thumb drags in either direction and ignores taps or vertical scrolling", () => {
+  for (const travel of [-40, 40, -80]) {
+    const shot = thumbStroke(travel, 0)!;
+    expect(shot.vx).toBeLessThan(0);
+    const assisted = assistedStroke(shot.vx, shot.vy);
+    expect(simulate(assisted.vx, assisted.vy)?.made).toBe(1);
+  }
+  expect(thumbStroke(4, 0)).toBeNull();
+  expect(thumbStroke(12, 50)).toBeNull();
+  expect(thumbStroke(NaN, 0)).toBeNull();
 });

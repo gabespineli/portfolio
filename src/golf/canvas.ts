@@ -393,7 +393,24 @@ export function mountGolf(root: HTMLElement) {
         Math.max(-0.2, Math.min(0.25, (club.x - ball.x) * 0.16)),
       );
     } else if (drag && phase === "ready") {
-      drawPutter(drag.x, drag.y);
+      if (touchStart) {
+        const x = ball.x + c.ballRadius + drag.x - touchStart.x;
+        const y = ball.y + (drag.y - touchStart.y) * 0.2;
+        ctx.save();
+        ctx.strokeStyle = "#fffdf3b0";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(sx(ball.x), sy(ball.y));
+        ctx.lineTo(sx(drag.x), sy(drag.y));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(sx(drag.x), sy(drag.y), 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        drawPutter(x, y);
+      } else drawPutter(drag.x, drag.y);
     } else if (keyboardStart !== null && phase === "ready") {
       const pull = Math.min(
           1.2,
@@ -484,6 +501,7 @@ export function mountGolf(root: HTMLElement) {
     vx = assisted.vx;
     vy = assisted.vy;
     if (phase !== "ready" || !P.shoot(ball, vx, vy)) return false;
+    root.classList.remove("is-interacting");
     root.classList.add("has-putted");
     followX = ball.x + c.ballRadius;
     followY = ball.y;
@@ -540,7 +558,7 @@ export function mountGolf(root: HTMLElement) {
     unlockAudio();
     if (phase !== "ready" || e.button !== 0 || drag) return;
     const p = point(e),
-      tolerance = 28 / scale;
+      tolerance = (e.pointerType === "touch" ? 48 : 28) / scale;
     if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
     drag = { ...p, id: e.pointerId };
     touchStart = e.pointerType === "touch" ? p : null;
@@ -563,12 +581,13 @@ export function mountGolf(root: HTMLElement) {
     canvas.classList.remove("is-dragging");
     if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
     root.classList.remove("is-interacting");
-    if (touchStart && (touchStart.x - p.x) * scale > 12) {
-      const elapsed = Math.max(0.08, (p.time - touchStart.time) / 1000);
-      strike(
-        ((p.x - touchStart.x) / elapsed) * 0.88,
-        ((p.y - touchStart.y) / elapsed) * 0.22,
+    if (touchStart) {
+      const shot = P.thumbStroke(
+        (p.x - touchStart.x) * scale,
+        (p.y - touchStart.y) * scale,
       );
+      if (shot) strike(shot.vx, shot.vy);
+      else draw();
     } else if (dx < -0.04) strike(dx * 3.25, dy * 3.25);
     else draw();
     touchStart = null;
