@@ -39,7 +39,7 @@ function shoot(ball: Ball, vx: number, vy = 0) {
   ball.vy = vy * scale;
   return true;
 }
-function step(ball: Ball, dt: number) {
+function step(ball: Ball, dt: number, objectScale = 1) {
   if (ball.sunk) return "sunk";
   if (ball.missed) return "missed";
   if (!Number.isFinite(dt) || dt <= 0)
@@ -60,14 +60,15 @@ function step(ball: Ball, dt: number) {
       fromY = ball.y;
     ball.x += (ball.vx / speed) * distance;
     ball.y += (ball.vy / speed) * distance;
-    ball.rotation += distance / course.ballRadius;
+    ball.rotation += distance / (course.ballRadius * objectScale);
     const factor = next / speed;
     ball.vx *= factor;
     ball.vy *= factor;
     // Capture on overlap alone, at any speed. Check the entire travelled
     // segment so a fast ball cannot skip over the cup between updates.
     // This generous threshold also includes every 80%-overlapping entry.
-    const captureRadius = course.cupRadius + course.ballRadius * 0.25;
+    const captureRadius =
+      (course.cupRadius + course.ballRadius * 0.25) * objectScale;
     const dx = ball.x - fromX,
       dy = ball.y - fromY;
     const lengthSquared = dx * dx + dy * dy;
@@ -114,36 +115,39 @@ function impact(
   current: Point,
   ball: Ball,
   head = { width: 0, halfHeight: 0.055 },
+  objectScale = 1,
 ) {
   if (!previous || current.time <= previous.time) return null;
   const dt = (current.time - previous.time) / 1000,
     dx = current.x - previous.x,
     dy = current.y - previous.y,
-    face = ball.x + course.ballRadius;
+    face = ball.x + course.ballRadius * objectScale;
   if (
     dt > 0.15 ||
     dx >= 0 ||
-    previous.x + head.width < ball.x - course.ballRadius ||
+    previous.x + head.width < ball.x - course.ballRadius * objectScale ||
     current.x > face
   )
     return null;
   // Sweep the entire head, including starts already overlapping its face.
   const fraction = Math.max(0, Math.min(1, (face - previous.x) / dx)),
     y = previous.y + dy * fraction;
-  if (Math.abs(y - ball.y) > course.ballRadius + head.halfHeight) return null;
-  const vx = Math.max(-4.2, (dx / dt) * 0.88),
-    vy = Math.max(-0.65, Math.min(0.65, (dy / dt) * 0.22));
+  if (Math.abs(y - ball.y) > course.ballRadius * objectScale + head.halfHeight)
+    return null;
+  const transfer = Math.min(0.88, (4.2 * dt) / Math.hypot(dx, dy));
+  const vx = (dx / dt) * transfer,
+    vy = (dy / dt) * transfer;
   return vx <= -0.12 ? { vx, vy } : null;
 }
 export { course, rollingDeceleration, createBall, shoot, step, impact };
 
-// Compress hand-speed variation and soften small vertical mouse wobbles.
+// Compress hand-speed variation while preserving the actual stroke direction.
 // Tiny taps still fall short; every stroke crossing the cup is captured.
 export function assistedStroke(vx: number, vy = 0) {
   const raw = Math.hypot(vx, vy);
   if (raw < 0.12 || !Number.isFinite(raw)) return { vx, vy };
   const speed = Math.min(3.6, 2.65 * (raw / 2.8) ** 0.35);
-  const angle = Math.atan2(vy, Math.abs(vx)) * 0.16;
+  const angle = Math.atan2(vy, Math.abs(vx));
   return {
     vx: Math.sign(vx) * speed * Math.cos(angle),
     vy: speed * Math.sin(angle),

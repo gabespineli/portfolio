@@ -98,6 +98,9 @@ export function mountGolf(root: HTMLElement) {
   let touchOffset = 0;
   const putterHead = () => ({ width: 21 / scale, halfHeight: 33 / scale });
   const clubPoint = (p: P.Point): P.Point => ({ ...p, x: p.x + touchOffset });
+  let objectScale = 1,
+    shotScale = 1;
+  const displayScale = () => (phase === "ready" ? objectScale : shotScale);
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const hint = coarse
     ? "Drag through the ball from right to left to putt."
@@ -133,6 +136,9 @@ export function mountGolf(root: HTMLElement) {
     width = Math.max(240, r.width);
     height = r.height || 120;
     scale = (width - 56) / c.length;
+    objectScale = window.matchMedia("(max-width: 720px)").matches
+      ? Math.min(4, Math.max(1, 8 / (c.ballRadius * scale)))
+      : 1;
     root.style.setProperty("--golf-ball-x", `${sx(c.start.x)}px`);
     root.style.setProperty("--golf-ball-y", `${height / 2}px`);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -286,7 +292,7 @@ export function mountGolf(root: HTMLElement) {
     if (turfCache) ctx.drawImage(turfCache, 0, 0, width, height);
     const hx = sx(c.cup.x),
       hy = sy(c.cup.y),
-      holeRadius = c.cupRadius * scale;
+      holeRadius = c.cupRadius * scale * displayScale();
     ctx.fillStyle = "#527a21";
     ctx.beginPath();
     ctx.arc(hx, hy, holeRadius + 2, 0, Math.PI * 2);
@@ -311,7 +317,7 @@ export function mountGolf(root: HTMLElement) {
           ? sy(drop.y + (c.cup.y - drop.y) * settle) +
             progress ** 2 * holeRadius * 0.18
           : sy(ball.y),
-        r = c.ballRadius * scale * shrink;
+        r = c.ballRadius * scale * displayScale() * shrink;
       ctx.save();
       if (drop) {
         ctx.globalAlpha = 1 - progress ** 4;
@@ -483,7 +489,7 @@ export function mountGolf(root: HTMLElement) {
     const dt = last ? Math.min((time - last) / 1000, 0.05) : 1 / 60;
     last = time;
     const entry = { x: ball.x, y: ball.y, rotation: ball.rotation };
-    const result = P.step(ball, dt);
+    const result = P.step(ball, dt, shotScale);
     if (result === "sunk") {
       drop = { ...entry, start: time };
       phase = "sinking";
@@ -506,7 +512,8 @@ export function mountGolf(root: HTMLElement) {
     if (phase !== "ready" || !P.shoot(ball, vx, vy)) return false;
     root.classList.remove("is-interacting");
     root.classList.add("has-putted");
-    followX = ball.x + c.ballRadius;
+    shotScale = objectScale;
+    followX = ball.x + c.ballRadius * objectScale;
     followY = ball.y;
     followStart = performance.now();
     sound();
@@ -522,7 +529,7 @@ export function mountGolf(root: HTMLElement) {
     $("golf-instructions").textContent = "Follow through · rolling…";
     say("Putt attempted.");
     shotId = crypto.randomUUID();
-    shotStarted = api.beginShot(shotId, vx, vy).then(showCounts);
+    shotStarted = api.beginShot(shotId, vx, vy, shotScale).then(showCounts);
     shotStarted.catch(() => {});
     raf = requestAnimationFrame(frame);
     return true;
@@ -537,7 +544,7 @@ export function mountGolf(root: HTMLElement) {
       if (drag.id !== e.pointerId) return;
       drag = { ...p, id: e.pointerId };
       const current = clubPoint(p);
-      const hit = P.impact(previous, current, ball, putterHead());
+      const hit = P.impact(previous, current, ball, putterHead(), objectScale);
       if (hit) strike(hit.vx, hit.vy);
       else {
         previous = current;
@@ -554,7 +561,7 @@ export function mountGolf(root: HTMLElement) {
       swing = previous && p.x > previous.x ? "Backswing" : "Downswing";
       $("golf-instructions").textContent =
         `${swing} · sweep through the ball to the left`;
-      const hit = P.impact(previous, p, ball, putterHead());
+      const hit = P.impact(previous, p, ball, putterHead(), objectScale);
       if (hit) strike(hit.vx, hit.vy);
     }
     previous = phase === "ready" ? p : null;
@@ -574,15 +581,15 @@ export function mountGolf(root: HTMLElement) {
     if (touch) {
       if (
         p.x < ball.x - tolerance ||
-        Math.abs(p.y - ball.y) > 33 / scale + c.ballRadius
+        Math.abs(p.y - ball.y) > 33 / scale + c.ballRadius * objectScale
       )
         return;
     } else if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
     drag = { ...p, id: e.pointerId };
     touchStart = touch ? p : null;
     touchOffset =
-      touch && p.x < ball.x + c.ballRadius + 8 / scale
-        ? ball.x + c.ballRadius + 8 / scale - p.x
+      touch && p.x < ball.x + c.ballRadius * objectScale + 8 / scale
+        ? ball.x + c.ballRadius * objectScale + 8 / scale - p.x
         : 0;
     root.classList.add("is-interacting");
     previous = clubPoint(p);

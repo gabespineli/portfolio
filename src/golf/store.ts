@@ -18,8 +18,8 @@ async function request(path: string, body?: object): Promise<Counts> {
 export function createPuttingStore() {
   return {
     getCounts: () => request("counts"),
-    beginShot: (id: string, vx: number, vy: number) =>
-      request("shots", { id, vx, vy }),
+    beginShot: (id: string, vx: number, vy: number, objectScale = 1) =>
+      request("shots", { id, vx, vy, objectScale }),
     // The server calculates the result from velocity; it never trusts a claimed score.
     finishShot: (id: string, _made: boolean) =>
       request(`shots/${id}/finish`, {}),

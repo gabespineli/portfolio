@@ -60,9 +60,9 @@ it("drops cup crossings at any speed but preserves off-line misses", () => {
   }
 });
 
-it("helps ordinary mouse strokes reach the cup despite small hand wobbles", () => {
+it("keeps speed assistance for nearly straight strokes", () => {
   for (const speed of [2.5, 3, 4, 5, 6]) {
-    const shot = assistedStroke(-speed, 0.12);
+    const shot = assistedStroke(-speed, 0.03);
     expect(simulate(shot.vx, shot.vy)?.made).toBe(1);
   }
   expect(simulate(assistedStroke(-0.2).vx, 0)?.made).toBe(0);
@@ -123,4 +123,33 @@ it("uses the full visible putter head at desktop and phone scales", () => {
       ),
     ).toBeNull();
   }
+});
+
+it("preserves diagonal stroke direction and lets sideways putts miss", () => {
+  for (const vertical of [-0.05, 0.05]) {
+    const ball = createBall();
+    const face = ball.x + course.ballRadius;
+    const hit = impact(
+      { x: face + 0.1, y: -vertical / 2, time: 0 },
+      { x: face - 0.1, y: vertical / 2, time: 80 },
+      ball,
+    )!;
+    const shot = assistedStroke(hit.vx, hit.vy);
+    expect(shot.vy / shot.vx).toBeCloseTo(vertical / -0.2);
+    shoot(ball, shot.vx, shot.vy);
+    step(ball, 0.05);
+    expect(Math.sign(ball.y)).toBe(Math.sign(vertical));
+    expect(simulate(shot.vx, shot.vy)?.made).toBe(0);
+  }
+});
+
+it("matches phone cup captures between client and server without enlarging desktop", () => {
+  expect(simulate(-2.8, 0.14)?.made).toBe(0);
+  expect(simulate(-2.8, 0.14, 3)?.made).toBe(1);
+  const ball = createBall();
+  shoot(ball, -2.8, 0.14);
+  for (let i = 0; i < 4000 && step(ball, 1 / 60, 3) === "moving"; i++) {
+    /* advance */
+  }
+  expect(ball.sunk).toBe(true);
 });

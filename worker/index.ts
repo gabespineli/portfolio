@@ -9,11 +9,11 @@ const json = (data: unknown, status = 200) =>
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function simulate(vx: number, vy: number) {
+export function simulate(vx: number, vy: number, objectScale = 1) {
   const ball = createBall();
   if (!shoot(ball, vx, vy)) return null;
   let frames = 0;
-  while (frames++ < 1000 && step(ball, 1 / 60) === "moving") {
+  while (frames++ < 1000 && step(ball, 1 / 60, objectScale) === "moving") {
     /* deterministic server simulation */
   }
   return { made: ball.sunk ? 1 : 0, duration: Math.ceil((frames * 1000) / 60) };
@@ -75,7 +75,7 @@ export default {
       }
       const now = Date.now();
       if (url.pathname === "/api/golf/shots") {
-        const { id, vx, vy } = input;
+        const { id, vx, vy, objectScale = 1 } = input;
         if (
           typeof id !== "string" ||
           !uuid.test(id) ||
@@ -83,10 +83,14 @@ export default {
           typeof vy !== "number" ||
           !Number.isFinite(vx) ||
           !Number.isFinite(vy) ||
-          Math.hypot(vx, vy) > 50
+          Math.hypot(vx, vy) > 50 ||
+          typeof objectScale !== "number" ||
+          !Number.isFinite(objectScale) ||
+          objectScale < 1 ||
+          objectScale > 4
         )
           return json({ error: "Invalid shot" }, 400);
-        const result = simulate(vx, vy);
+        const result = simulate(vx, vy, objectScale);
         if (!result) return json({ error: "Invalid velocity" }, 400);
         const minute = Math.floor(now / 60000);
         // Retain only a short-lived hash, never a raw visitor IP.
