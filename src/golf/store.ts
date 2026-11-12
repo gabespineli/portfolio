@@ -4,8 +4,15 @@ export interface Counts {
   scope: "local" | "global";
 }
 
+// Public API URL; contains no credentials. Local development keeps its Vite proxy.
+const apiOrigin =
+  import.meta.env.VITE_GOLF_API_URL ??
+  (import.meta.env.PROD
+    ? "https://gab-portfolio-golf.gabespineli.workers.dev"
+    : "");
+
 async function request(path: string, body?: object): Promise<Counts> {
-  const response = await fetch(`/api/golf/${path}`, {
+  const response = await fetch(`${apiOrigin}/api/golf/${path}`, {
     method: body ? "POST" : "GET",
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,

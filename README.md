@@ -1,6 +1,6 @@
 # Gab Espineli portfolio
 
-React + TypeScript + Vite frontend, with a TypeScript Cloudflare Worker and D1 (SQLite) for shared golf statistics. The existing portfolio, case studies, résumé, and mouse/touch/keyboard golf controls are preserved.
+React + TypeScript + Vite portfolio hosted on Vercel, with a Cloudflare Worker and D1 (SQLite) for shared golf statistics. Includes the résumé PDF and mouse, touch, and keyboard golf controls.
 
 ## Run locally
 
@@ -25,25 +25,23 @@ Cloudflare Workers + D1 keeps hosting, API, and storage in one service. At the t
 
 The game runs in the browser. Only aggregate statistics are shared; this is not synchronous multiplayer. Counts refresh after shots and once per minute while the page is visible. Totals start at zero, with no simulated visitors or successful putts. If the API is unavailable, the game remains playable and reports that shared counts are unavailable.
 
-## Deploy globally (one-time account setup)
+## Live hosting: Vercel frontend + Cloudflare golf API
 
-The repository is ready for deployment, but does **not** create a hosted database automatically. From this directory:
+The portfolio stays at https://gabespineli.vercel.app/. Shared golf counts are served directly by https://gab-portfolio-golf.gabespineli.workers.dev/api/golf/counts.
+
+`wrangler.api.jsonc` deploys only `worker/api.ts`, connected to the `portfolio-golf` D1 database. The production database ID is a public resource identifier, not a credential. The API allows browser requests from `https://gabespineli.vercel.app`, rejects other origins, and uses Cloudflare's visitor IP for per-visitor rate limiting. Its hourly retention job deletes expired shot receipts and rate limits while preserving totals.
+
+To deploy backend changes from this checkout:
 
 ```cmd
 npx wrangler login
-npx wrangler d1 create portfolio-golf
-```
-
-Copy the returned database ID into `wrangler.jsonc`, replacing the all-zero `database_id`. Then run:
-
-```cmd
 npm run db:remote
-npm run deploy
+npm run deploy:api
 ```
 
-Wrangler prints the deployed URL. The same Worker serves the built frontend and `/api/golf/*`, so no CORS configuration or public database key is needed. Its scheduled handler removes expired rate-limit rows and shot receipts older than seven days; aggregate totals remain. Local and remote databases are separate. Commit the assigned database ID after setup if you want future checkouts/CI to target the same database; it is an identifier, not a credential. Keep Cloudflare API tokens out of source control.
+The checked-in migration is applied only if it has not already run. Do not recreate the database or rerun its SQL manually. The original `wrangler.jsonc` remains available for local combined frontend/API development; production deployment uses `wrangler.api.jsonc` instead.
 
-Do not deploy only the `dist` directory to a static host and expect the golf API to work. Use the Worker deployment above, or configure a separate API proxy if changing hosts. Existing project URLs and `/resume.html` use the SPA fallback.
+The production frontend uses the public Worker URL in `src/golf/store.ts`; `VITE_GOLF_API_URL` can override it at build time. No Vercel environment variable is required. Local `npm run dev` still uses the local API via Vite's `/api` proxy. Vercel Git deployment publishes frontend updates from `main`; deploy backend changes separately using `npm run deploy:api`.
 
 ## Integrity and limits
 
@@ -79,9 +77,3 @@ The integration test uses only the local API and adds real test shots to the loc
 - `wrangler.jsonc`: Worker hosting and database binding.
 
 Changes to frontend content use Vite hot reload. The Worker reloads when its TypeScript source changes. `npm run build` checks both frontend and backend TypeScript and produces the frontend in `dist`.
-
-## Vercel frontend hosting
-
-`vercel.json` configures the Vite production build in `dist`. The portfolio includes the supplied résumé PDF and static project/profile images. Project cards have no internal detail pages; only WTP Coffee links to its external website.
-
-The golf game runs in the browser on Vercel, but its shared counters still require the Cloudflare Worker/D1 backend described above. That backend is not configured by a Vercel frontend deployment. Without it, the game remains playable and shared counters are unavailable. Local database totals are not production totals.

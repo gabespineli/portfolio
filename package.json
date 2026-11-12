@@ -13,8 +13,9 @@
     "test": "vitest run",
     "test:api": "node scripts/test-api.mjs",
     "db:local": "wrangler d1 migrations apply portfolio-golf --local",
-    "db:remote": "wrangler d1 migrations apply portfolio-golf --remote",
-    "deploy": "npm run build && wrangler deploy"
+    "db:remote": "wrangler d1 migrations apply portfolio-golf --remote --config wrangler.api.jsonc",
+    "deploy": "npm run deploy:api",
+    "deploy:api": "wrangler deploy --config wrangler.api.jsonc"
   },
   "dependencies": {
     "react": "^19.3.1",

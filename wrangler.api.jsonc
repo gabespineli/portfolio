@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gab-portfolio-golf",
+  "main": "worker/api.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://gabespineli.vercel.app"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio-golf",
+      "database_id": "3cb89066-e6c4-4817-9820-35dce50b72a5",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  }
+}

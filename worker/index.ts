@@ -1,8 +1,9 @@
 import { createBall, shoot, step } from "../src/golf/physics";
 
-interface Env {
+export interface Env {
   DB: D1Database;
-  ASSETS: Fetcher;
+  ASSETS?: Fetcher;
+  ALLOWED_ORIGIN?: string;
 }
 const json = (data: unknown, status = 200) =>
   Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -34,7 +35,10 @@ async function counts(env: Env, request: Request) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    if (!url.pathname.startsWith("/api/"))
+      return env.ASSETS
+        ? env.ASSETS.fetch(request)
+        : json({ error: "Not found" }, 404);
     try {
       if (request.method === "GET" && url.pathname === "/api/golf/counts")
         return counts(env, request);
@@ -43,7 +47,12 @@ export default {
       const localDev =
         ["127.0.0.1", "localhost"].includes(url.hostname) &&
         origin === "http://127.0.0.1:5173";
-      if (origin && origin !== url.origin && !localDev)
+      if (
+        origin &&
+        origin !== url.origin &&
+        origin !== env.ALLOWED_ORIGIN &&
+        !localDev
+      )
         return json({ error: "Origin not allowed" }, 403);
       if (!request.headers.get("Content-Type")?.startsWith("application/json"))
         return json({ error: "Expected JSON" }, 415);
