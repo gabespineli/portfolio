@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { mountGolf } from "./canvas";
-
 export function Golf() {
   const root = useRef<HTMLElement>(null);
   useEffect(() => mountGolf(root.current!), []);
@@ -23,7 +22,9 @@ export function Golf() {
         A one-hole putting green. Enable JavaScript to play.
       </canvas>
       <div className="putting-caption">
-        <span id="golf-instructions">Putt from right to left.</span>
+        <span id="golf-instructions" className="sr-only">
+          Putt from right to left.
+        </span>
         <div className="putting-totals" aria-label="Shared putting statistics">
           <span>
             <b id="golf-attempts">—</b> attempts
@@ -31,7 +32,7 @@ export function Golf() {
           <span>
             <b id="golf-made">—</b> made
           </span>
-          <span id="golf-scope" className="mock-label">
+          <span id="golf-scope" className="sr-only">
             Connecting…
           </span>
         </div>
@@ -43,9 +44,10 @@ export function Golf() {
         aria-live="polite"
       />
       <span id="golf-keyboard" className="sr-only">
-        Mouse: move the putter into the ball from the right. Touch: pull right
-        from the ball and release. Keyboard: hold Space to draw back and release
-        to putt. Left and right arrows adjust aim. Escape cancels a stroke.
+        Mouse: move right for the backswing, then left through the ball for the
+        downswing and follow through. Touch: pull right from the ball and
+        release. Keyboard: hold Space to draw back and release to putt. Left and
+        right arrows adjust aim. Escape cancels a stroke.
       </span>
     </section>
   );

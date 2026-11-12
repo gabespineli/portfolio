@@ -1,11 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { createBall, shoot, step, impact } from "../src/golf/physics";
+import {
+  createBall,
+  shoot,
+  step,
+  impact,
+  assistedStroke,
+  course,
+} from "../src/golf/physics";
 import { simulate } from "../worker/index";
 
 describe("putting physics shared by browser and API", () => {
-  it("accepts a controlled putt and rejects an overpowered one", () => {
+  it("sinks controlled and fast putts and rejects invalid shots", () => {
     expect(simulate(-2.6, 0)?.made).toBe(1);
-    expect(simulate(-4.2, 0)?.made).toBe(0);
+    expect(simulate(-4.2, 0)?.made).toBe(1);
     expect(simulate(0, 0)).toBeNull();
     expect(simulate(NaN, 0)).toBeNull();
   });
@@ -31,4 +38,48 @@ describe("putting physics shared by browser and API", () => {
       impact({ x: 5.5, y: 0, time: 0 }, { x: 5.3, y: 0, time: 500 }, ball),
     ).toBeNull();
   });
+});
+
+it("drops cup crossings at any speed but preserves off-line misses", () => {
+  for (const dt of [1 / 30, 1 / 60, 1 / 144]) {
+    for (const [speed, offset, sunk] of [
+      [1.1, 0, true],
+      [1.1, 0.07, true],
+      [3.8, 0, true],
+      [1.1, 0.24, false],
+    ] as const) {
+      const ball = createBall();
+      ball.x = 0.95;
+      ball.y = offset;
+      shoot(ball, -speed);
+      for (let i = 0; i < 4000 && step(ball, dt) === "moving"; i++) {
+        /* advance */
+      }
+      expect(ball.sunk).toBe(sunk);
+    }
+  }
+});
+
+it("helps ordinary mouse strokes reach the cup despite small hand wobbles", () => {
+  for (const speed of [2.5, 3, 4, 5, 6]) {
+    const shot = assistedStroke(-speed, 0.12);
+    expect(simulate(shot.vx, shot.vy)?.made).toBe(1);
+  }
+  expect(simulate(assistedStroke(-0.2).vx, 0)?.made).toBe(0);
+});
+
+it("captures deeply overlapping fast entries consistently across frame rates", () => {
+  for (const dt of [1 / 30, 1 / 60, 1 / 144]) {
+    for (const speed of [1.1, 3.8, 4.2]) {
+      const ball = createBall();
+      ball.x = course.cup.x + 0.27;
+      // 80% of the ball diameter extends inside the cup's near edge.
+      ball.y = course.cupRadius - course.ballRadius * 0.6;
+      shoot(ball, -speed);
+      for (let i = 0; i < 4000 && step(ball, dt) === "moving"; i++) {
+        /* advance */
+      }
+      expect(ball.sunk).toBe(true);
+    }
+  }
 });

@@ -28,6 +28,66 @@ export function mountGolf(root: HTMLElement) {
     resetTimer: ReturnType<typeof setTimeout> | undefined,
     shotId = "",
     shotStarted: Promise<void>;
+  let club: P.Point | null = null;
+  let swing = "Address",
+    followStart = 0,
+    followX = 0,
+    followY = 0;
+  let drop: { start: number; x: number; y: number; rotation: number } | null =
+    null;
+  const dropDuration = 150;
+  let audio: AudioContext | null = null;
+  function unlockAudio() {
+    try {
+      audio ??= new AudioContext();
+      void audio.resume().catch(() => {});
+    } catch {
+      /* Audio is optional. */
+    }
+  }
+  function sound(cup = false) {
+    unlockAudio();
+    if (!audio) return;
+    if (audio.state !== "running") {
+      void audio
+        .resume()
+        .then(() => {
+          if (!disposed && audio?.state === "running") sound(cup);
+        })
+        .catch(() => {});
+      return;
+    }
+    const now = audio.currentTime;
+    // Short filtered impacts model a face click and hollow plastic-cup rattle.
+    // Noise transients avoid the pitched, electronic slide of an oscillator.
+    for (let i = 0; i < (cup ? 4 : 1); i++) {
+      const duration = cup ? 0.065 : 0.035;
+      const buffer = audio.createBuffer(
+        1,
+        Math.ceil(audio.sampleRate * duration),
+        audio.sampleRate,
+      );
+      const samples = buffer.getChannelData(0);
+      for (let n = 0; n < samples.length; n++) {
+        samples[n] =
+          (Math.random() * 2 - 1) *
+          Math.exp(-n / (audio.sampleRate * (cup ? 0.012 : 0.005)));
+      }
+      const source = audio.createBufferSource();
+      source.buffer = buffer;
+      const filter = audio.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = cup ? [820, 1250, 660, 1040][i] : 2400;
+      filter.Q.value = cup ? 3.8 : 0.7;
+      const gain = audio.createGain();
+      gain.gain.value = (cup ? 0.85 : 0.65) * 0.65 ** i;
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audio.destination);
+      source.start(now + (cup ? [0.035, 0.07, 0.11, 0.145][i] : 0));
+    }
+  }
+
   let width = 1000,
     height = 120,
     scale = 150,
@@ -37,7 +97,7 @@ export function mountGolf(root: HTMLElement) {
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const hint = coarse
     ? "Pull right from the ball, then release."
-    : "Putt from right to left.";
+    : "Move right to draw back, then sweep left to putt.";
   $("golf-instructions").textContent = hint;
   const say = (text: string) => {
     if (disposed) return;
@@ -86,7 +146,7 @@ export function mountGolf(root: HTMLElement) {
     texture.height = Math.ceil(height * dpr);
     const g = texture.getContext("2d")!;
     g.scale(dpr, dpr);
-    const laneH = Math.min(height - 20, Math.max(58, scale * 0.6)),
+    const laneH = height - 20,
       top = (height - laneH) / 2;
     let seed = 1729;
     const random = () => {
@@ -122,12 +182,17 @@ export function mountGolf(root: HTMLElement) {
       "#bad06b",
       "#568b24",
     ];
-    const count = Math.floor(width * laneH * 0.52);
+    // Short, closely mown grass viewed directly from above.
+    for (let x = 0; x < width; x += 100) {
+      g.fillStyle = x % 200 === 0 ? "#ffffff08" : "#153a1508";
+      g.fillRect(x, top, 100, laneH);
+    }
+    const count = Math.floor(width * laneH * 0.32);
     g.lineCap = "round";
     for (let i = 0; i < count; i++) {
       const x = 8 + random() * (width - 16),
         y = top - 3 + random() * (laneH + 7),
-        length = 1.4 + random() * 4.4;
+        length = 0.5 + random() * 1.5;
       const lean = (random() - 0.5) * 4.3,
         light = random();
       g.strokeStyle = shadows[Math.floor(random() * shadows.length)];
@@ -168,35 +233,44 @@ export function mountGolf(root: HTMLElement) {
   function drawPutter(x: number, y: number, angle = 0) {
     ctx.save();
     ctx.translate(sx(x), sy(y));
-    ctx.rotate(Math.PI + angle);
-    ctx.shadowColor = "#384d2630";
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetY = 2;
-    ctx.strokeStyle = "#a4aaa0";
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    ctx.moveTo(-34, 0);
-    ctx.lineTo(-3, 0);
-    ctx.stroke();
-    ctx.strokeStyle = "#4d6247";
+    ctx.rotate(angle);
+    ctx.shadowColor = "#13241055";
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 5;
+    const steel = ctx.createLinearGradient(0, -23, 18, 23);
+    steel.addColorStop(0, "#fafcfd");
+    steel.addColorStop(0.3, "#9caab0");
+    steel.addColorStop(0.48, "#f1f6f8");
+    steel.addColorStop(0.6, "#65757e");
+    steel.addColorStop(1, "#c8d1d6");
+    // Shaft extends toward the golfer, perpendicular to the striking face.
+    ctx.strokeStyle = "#c8d3d8";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(-38, 0);
-    ctx.lineTo(-27, 0);
+    ctx.moveTo(12, 5);
+    ctx.lineTo(62, 57);
     ctx.stroke();
-    const steel = ctx.createLinearGradient(-5, -13, 2, 13);
-    steel.addColorStop(0, "#fafbf6");
-    steel.addColorStop(0.4, "#c6cec0");
-    steel.addColorStop(0.6, "#8b9986");
-    steel.addColorStop(1, "#e5e9df");
+    ctx.strokeStyle = "#34443c";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(49, 44);
+    ctx.lineTo(70, 66);
+    ctx.stroke();
     ctx.fillStyle = steel;
     ctx.beginPath();
-    ctx.roundRect(-7, -13, 7, 26, 2);
+    ctx.roundRect(0, -25, 21, 50, 5);
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = "#6a7960";
-    ctx.lineWidth = 0.7;
+    ctx.shadowColor = "transparent";
+    ctx.strokeStyle = "#52636b";
+    ctx.lineWidth = 1;
     ctx.stroke();
+    ctx.fillStyle = "#27383a";
+    ctx.fillRect(1, -21, 3, 42);
+    ctx.fillStyle = "#53646b";
+    ctx.fillRect(9, -16, 7, 32);
+    ctx.fillStyle = "#f9faf4";
+    ctx.fillRect(6, -1, 13, 2);
     ctx.restore();
   }
   function draw() {
@@ -204,7 +278,7 @@ export function mountGolf(root: HTMLElement) {
     if (turfCache) ctx.drawImage(turfCache, 0, 0, width, height);
     const hx = sx(c.cup.x),
       hy = sy(c.cup.y),
-      holeRadius = Math.max(6, c.cupRadius * scale);
+      holeRadius = c.cupRadius * scale;
     ctx.fillStyle = "#527a21";
     ctx.beginPath();
     ctx.arc(hx, hy, holeRadius + 2, 0, Math.PI * 2);
@@ -218,10 +292,27 @@ export function mountGolf(root: HTMLElement) {
     ctx.beginPath();
     ctx.arc(hx, hy, holeRadius, 0, Math.PI);
     ctx.stroke();
-    if (!ball.sunk) {
-      const bx = sx(ball.x),
-        by = sy(ball.y),
-        r = Math.max(4.6, c.ballRadius * scale);
+    if (!ball.sunk || drop) {
+      const progress = drop
+        ? Math.min(1, (performance.now() - drop.start) / dropDuration)
+        : 0;
+      const settle = 1 - (1 - Math.min(1, progress / 0.55)) ** 3;
+      const shrink = 1 - 0.28 * progress ** 2;
+      const bx = drop ? sx(drop.x + (c.cup.x - drop.x) * settle) : sx(ball.x),
+        by = drop
+          ? sy(drop.y + (c.cup.y - drop.y) * settle) +
+            progress ** 2 * holeRadius * 0.18
+          : sy(ball.y),
+        r = c.ballRadius * scale * shrink;
+      ctx.save();
+      if (drop) {
+        ctx.globalAlpha = 1 - progress ** 4;
+        if (progress > 0.2) {
+          ctx.beginPath();
+          ctx.arc(hx, hy, holeRadius - 0.5, 0, Math.PI * 2);
+          ctx.clip();
+        }
+      }
       ctx.fillStyle = "#46533230";
       ctx.beginPath();
       ctx.ellipse(bx + 1, by + 2, r + 1, r * 0.7, 0, 0, Math.PI * 2);
@@ -233,21 +324,70 @@ export function mountGolf(root: HTMLElement) {
       ctx.beginPath();
       ctx.arc(bx, by, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#9eaa963d";
-      for (let i = 0; i < 3; i++) {
-        const angle = ball.rotation + i * 2.1;
-        ctx.beginPath();
-        ctx.arc(
-          bx + Math.cos(angle) * r * 0.45,
-          by + Math.sin(angle) * r * 0.45,
-          0.65,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(bx, by, r - 0.4, 0, Math.PI * 2);
+      ctx.clip();
+      // Rotate a sphere of dimples across the visible hemisphere. Unlike a
+      // shifting flat pattern, each dimple appears, foreshortens and disappears.
+      const spin = (drop ? drop.rotation + progress * 3 : ball.rotation) * 0.42;
+      const heading = Math.atan2(ball.vy, ball.vx || -1);
+      for (let row = -4; row <= 4; row++) {
+        const latitude = (row * Math.PI) / 10;
+        const band = Math.cos(latitude);
+        for (let col = 0; col < 18; col++) {
+          const longitude =
+            (col * Math.PI) / 9 + ((row % 2) * Math.PI) / 18 + spin;
+          const depth = Math.cos(longitude) * band;
+          if (depth <= 0.08) continue;
+          const along = Math.sin(longitude) * band * r;
+          const across = Math.sin(latitude) * r;
+          const dx = along * Math.cos(heading) - across * Math.sin(heading);
+          const dy = along * Math.sin(heading) + across * Math.cos(heading);
+          ctx.fillStyle = `rgba(92,112,126,${0.28 + depth * 0.26})`;
+          ctx.beginPath();
+          ctx.ellipse(
+            bx + dx,
+            by + dy,
+            r * 0.088 * depth,
+            r * 0.075,
+            heading,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+          ctx.strokeStyle = "#ffffffb8";
+          ctx.lineWidth = 0.55;
+          ctx.beginPath();
+          ctx.ellipse(
+            bx + dx,
+            by + dy + 0.35,
+            r * 0.088 * depth,
+            r * 0.075,
+            heading,
+            0,
+            Math.PI,
+          );
+          ctx.stroke();
+        }
       }
+      ctx.restore();
+      ctx.restore();
     }
-    if (drag && phase === "ready") {
+    if (followStart && performance.now() - followStart < 420) {
+      const t = Math.min(1, (performance.now() - followStart) / 420);
+      drawPutter(
+        followX - (55 / scale) * (1 - (1 - t) ** 3),
+        followY,
+        -0.16 * t,
+      );
+    } else if (club && phase === "ready" && !drag && keyboardStart === null) {
+      drawPutter(
+        club.x,
+        club.y,
+        Math.max(-0.2, Math.min(0.25, (club.x - ball.x) * 0.16)),
+      );
+    } else if (drag && phase === "ready") {
       drawPutter(drag.x, drag.y);
     } else if (keyboardStart !== null && phase === "ready") {
       const pull = Math.min(
@@ -264,6 +404,9 @@ export function mountGolf(root: HTMLElement) {
   }
   function reset() {
     clearTimeout(resetTimer);
+    club = null;
+    drop = null;
+    followStart = 0;
     ball = P.createBall();
     phase = "ready";
     previous = null;
@@ -275,6 +418,7 @@ export function mountGolf(root: HTMLElement) {
   }
   async function finish(made: boolean) {
     phase = "result";
+
     canvas.classList.remove("is-rolling");
     previous = null;
     $("golf-instructions").textContent = made
@@ -299,19 +443,46 @@ export function mountGolf(root: HTMLElement) {
     if (!disposed) resetTimer = setTimeout(reset, 1200);
   }
   function frame(time: number) {
+    if (phase === "sinking" && drop) {
+      draw();
+      if (time - drop.start < dropDuration) raf = requestAnimationFrame(frame);
+      else {
+        drop = null;
+        raf = 0;
+        draw();
+        void finish(true);
+      }
+      return;
+    }
     if (phase !== "rolling") return;
     const dt = last ? Math.min((time - last) / 1000, 0.05) : 1 / 60;
     last = time;
+    const entry = { x: ball.x, y: ball.y, rotation: ball.rotation };
     const result = P.step(ball, dt);
+    if (result === "sunk") {
+      drop = { ...entry, start: time };
+      phase = "sinking";
+      sound(true);
+      draw();
+      raf = requestAnimationFrame(frame);
+      return;
+    }
     draw();
     if (result === "moving") raf = requestAnimationFrame(frame);
     else {
       raf = 0;
-      finish(result === "sunk");
+      finish(false);
     }
   }
   function strike(vx: number, vy = 0) {
+    const assisted = P.assistedStroke(vx, vy);
+    vx = assisted.vx;
+    vy = assisted.vy;
     if (phase !== "ready" || !P.shoot(ball, vx, vy)) return false;
+    followX = ball.x + c.ballRadius;
+    followY = ball.y;
+    followStart = performance.now();
+    sound();
     phase = "rolling";
     previous = null;
     drag = null;
@@ -319,7 +490,7 @@ export function mountGolf(root: HTMLElement) {
     last = 0;
     canvas.classList.remove("is-dragging");
     canvas.classList.add("is-rolling");
-    $("golf-instructions").textContent = "Rolling…";
+    $("golf-instructions").textContent = "Follow through · rolling…";
     say("Putt attempted.");
     shotId = crypto.randomUUID();
     shotStarted = api.beginShot(shotId, vx, vy).then(showCounts);
@@ -328,6 +499,7 @@ export function mountGolf(root: HTMLElement) {
     return true;
   }
   listen(canvas, "pointerenter", () => {
+    unlockAudio();
     previous = null;
   });
   listen(canvas, "pointermove", (e) => {
@@ -343,15 +515,23 @@ export function mountGolf(root: HTMLElement) {
       e.pointerType !== "touch" &&
       keyboardStart === null
     ) {
+      club = p;
+      swing = previous && p.x > previous.x ? "Backswing" : "Downswing";
+      $("golf-instructions").textContent =
+        `${swing} · sweep through the ball to the left`;
       const hit = P.impact(previous, p, ball);
       if (hit) strike(hit.vx, hit.vy);
     }
     previous = phase === "ready" ? p : null;
+    if (phase === "ready") draw();
   });
   listen(canvas, "pointerleave", () => {
+    club = null;
     previous = null;
+    if (phase === "ready") draw();
   });
   listen(canvas, "pointerdown", (e) => {
+    unlockAudio();
     if (phase !== "ready" || e.button !== 0 || drag) return;
     const p = point(e),
       tolerance = 28 / scale;
@@ -396,6 +576,7 @@ export function mountGolf(root: HTMLElement) {
   listen(canvas, "keydown", (e) => {
     if (![" ", "ArrowLeft", "ArrowRight", "Escape"].includes(e.key)) return;
     e.preventDefault();
+    unlockAudio();
     if (phase !== "ready") return;
     if (e.key === "Escape") {
       cancelInput();
@@ -430,6 +611,10 @@ export function mountGolf(root: HTMLElement) {
     },
     { signal: events.signal },
   );
+  // Use existing page interactions too; no dedicated sound-enable click.
+  listen(document, "pointerdown", unlockAudio);
+  listen(document, "keydown", unlockAudio);
+  unlockAudio();
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   const refresh = () => {
@@ -453,5 +638,6 @@ export function mountGolf(root: HTMLElement) {
     clearInterval(poll);
     clearTimeout(resetTimer);
     cancelAnimationFrame(raf);
+    void audio?.close().catch(() => {});
   };
 }

@@ -5,13 +5,12 @@ export interface Point {
   time: number;
 }
 /* Metre/second rolling model on a flat putting green. No arcade wall bounces. */
-
 const course = {
   length: 6,
   start: { x: 5.32, y: 0 },
   cup: { x: 0.68, y: 0 },
-  ballRadius: 0.02135,
-  cupRadius: 0.095,
+  ballRadius: 0.075,
+  cupRadius: 0.145,
   greenHalfWidth: 0.27,
 };
 const rollingDeceleration = 0.62,
@@ -57,19 +56,37 @@ function step(ball: Ball, dt: number) {
         : rollingDeceleration;
     const next = Math.max(0, speed - decel * h),
       distance = (speed + next) * 0.5 * h;
+    const fromX = ball.x,
+      fromY = ball.y;
     ball.x += (ball.vx / speed) * distance;
     ball.y += (ball.vy / speed) * distance;
     ball.rotation += distance / course.ballRadius;
     const factor = next / speed;
     ball.vx *= factor;
     ball.vy *= factor;
-    const offset = Math.hypot(ball.x - course.cup.x, ball.y - course.cup.y),
-      captureRadius = course.cupRadius + course.ballRadius * 0.65;
-    // Speed and approach offset determine whether the ball has time to drop.
-    const captureSpeed =
-      Math.sqrt(2 * 9.81 * 0.17) *
-      Math.sqrt(Math.max(0, 1 - (offset / captureRadius) ** 2));
-    if (offset < captureRadius && next < captureSpeed) {
+    // Capture on overlap alone, at any speed. Check the entire travelled
+    // segment so a fast ball cannot skip over the cup between updates.
+    // This generous threshold also includes every 80%-overlapping entry.
+    const captureRadius = course.cupRadius + course.ballRadius * 0.25;
+    const dx = ball.x - fromX,
+      dy = ball.y - fromY;
+    const lengthSquared = dx * dx + dy * dy;
+    const t =
+      lengthSquared > 0
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              ((course.cup.x - fromX) * dx + (course.cup.y - fromY) * dy) /
+                lengthSquared,
+            ),
+          )
+        : 0;
+    const offset = Math.hypot(
+      fromX + t * dx - course.cup.x,
+      fromY + t * dy - course.cup.y,
+    );
+    if (offset <= captureRadius) {
       ball.x = course.cup.x;
       ball.y = course.cup.y;
       ball.vx = ball.vy = 0;
@@ -102,9 +119,22 @@ function impact(previous: Point | null, current: Point, ball: Ball) {
     return null;
   const fraction = (face - previous.x) / dx,
     y = previous.y + dy * fraction;
-  if (Math.abs(y - ball.y) > 0.065) return null;
+  if (Math.abs(y - ball.y) > course.ballRadius + 0.055) return null;
   const vx = Math.max(-4.2, (dx / dt) * 0.88),
     vy = Math.max(-0.65, Math.min(0.65, (dy / dt) * 0.22));
   return vx <= -0.12 ? { vx, vy } : null;
 }
 export { course, rollingDeceleration, createBall, shoot, step, impact };
+
+// Compress hand-speed variation and soften small vertical mouse wobbles.
+// Tiny taps still fall short; every stroke crossing the cup is captured.
+export function assistedStroke(vx: number, vy = 0) {
+  const raw = Math.hypot(vx, vy);
+  if (raw < 0.12 || !Number.isFinite(raw)) return { vx, vy };
+  const speed = Math.min(3.6, 2.65 * (raw / 2.8) ** 0.35);
+  const angle = Math.atan2(vy, Math.abs(vx)) * 0.16;
+  return {
+    vx: Math.sign(vx) * speed * Math.cos(angle),
+    vy: speed * Math.sin(angle),
+  };
+}
