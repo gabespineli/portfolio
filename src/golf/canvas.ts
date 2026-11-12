@@ -277,6 +277,8 @@ export function mountGolf(root: HTMLElement) {
     ctx.restore();
   }
   function draw() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     if (turfCache) ctx.drawImage(turfCache, 0, 0, width, height);
     const hx = sx(c.cup.x),
@@ -631,6 +633,13 @@ export function mountGolf(root: HTMLElement) {
   listen(document, "pointerdown", unlockAudio);
   listen(document, "keydown", unlockAudio);
   unlockAudio();
+  // Mobile browsers may discard an offscreen canvas surface. Rebuild its
+  // cached turf and backing store when it returns to the viewport.
+  const visibilityObserver = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) resize();
+  });
+  visibilityObserver.observe(canvas);
+  canvas.addEventListener("contextrestored", resize, { signal: events.signal });
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   const refresh = () => {
@@ -651,6 +660,7 @@ export function mountGolf(root: HTMLElement) {
     disposed = true;
     events.abort();
     observer.disconnect();
+    visibilityObserver.disconnect();
     clearInterval(poll);
     clearTimeout(resetTimer);
     cancelAnimationFrame(raf);

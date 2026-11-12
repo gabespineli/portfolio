@@ -19,17 +19,6 @@ export function App() {
       { signal: controller.signal },
     );
     document.addEventListener(
-      "pointerup",
-      (event) => {
-        const target = event.target as Element;
-        if (event.pointerType === "touch" && !target.closest("button,a"))
-          target
-            .closest<HTMLElement>(".experience-with-stack")
-            ?.focus({ preventScroll: true });
-      },
-      { signal: controller.signal },
-    );
-    document.addEventListener(
       "pointerdown",
       (event) => {
         const active = document.activeElement as HTMLElement | null;

@@ -30,7 +30,11 @@ export function ProjectList() {
     const navigable = p.id === "wtp-coffee";
     const Container = navigable ? "a" : "div";
     return (
-      <article className="project-item" key={p.id}>
+      <article
+        className="project-item"
+        key={p.id}
+        tabIndex={navigable ? undefined : 0}
+      >
         <Container
           className="project"
           {...(navigable

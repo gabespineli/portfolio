@@ -48,30 +48,28 @@ export function Home() {
     );
     const targets = Array.from(
       root.current?.querySelectorAll<HTMLElement>(
-        ".experience-with-stack, .project-item",
+        ".experience-with-stack .entry-top, .project-item .project-heading",
       ) ?? [],
+    );
+    const cards = targets.map((target) =>
+      target.closest<HTMLElement>(".experience-with-stack, .project-item")!,
     );
     let observer: IntersectionObserver | null = null;
     const update = () => {
       observer?.disconnect();
-      targets.forEach((target) => target.classList.remove("scroll-active"));
+      cards.forEach((card) => card.classList.remove("scroll-active"));
+      root.current?.classList.toggle("scroll-interactions", phone.matches);
       if (!phone.matches || !("IntersectionObserver" in window)) return;
       observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            entry.target.classList.toggle(
-              "scroll-active",
-              entry.isIntersecting,
+            const card = entry.target.closest(
+              ".experience-with-stack, .project-item",
             );
-            if (
-              entry.isIntersecting &&
-              entry.target.classList.contains("experience-with-stack")
-            ) {
-              observer?.unobserve(entry.target);
-            }
+            card?.classList.toggle("scroll-active", entry.isIntersecting);
           }
         },
-        { threshold: 0.15, rootMargin: "0px 0px -12% 0px" },
+        { threshold: 0, rootMargin: "-8% 0px -18% 0px" },
       );
       targets.forEach((target) => observer?.observe(target));
     };
@@ -80,7 +78,8 @@ export function Home() {
     return () => {
       observer?.disconnect();
       phone.removeEventListener("change", update);
-      targets.forEach((target) => target.classList.remove("scroll-active"));
+      cards.forEach((card) => card.classList.remove("scroll-active"));
+      root.current?.classList.remove("scroll-interactions");
     };
   }, []);
   return (
@@ -133,17 +132,13 @@ export function Home() {
               }
             </p>
             <p className={"intro-links"}>
-              <a href={"#work"}>
-                {"Explore my work "}
-                <span aria-hidden={"true"}>{"↗"}</span>
-              </a>
+              <a href={"#work"}>{"Explore my work "}</a>
               <a
                 href={"/ESPINELI_RESUME.pdf"}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 {"View résumé "}
-                <span aria-hidden={"true"}>{"↗"}</span>
               </a>
             </p>
           </div>
