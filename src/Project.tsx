@@ -67,7 +67,7 @@ export function ProjectList() {
                 )}
             </p>
             {navigable && (
-              <span className="project-visit">Visit wtpcoffee.com ↗</span>
+              <span className="project-visit">Visit wtpcoffee.com</span>
             )}
           </div>
         </Container>
