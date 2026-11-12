@@ -95,9 +95,7 @@ export function mountGolf(root: HTMLElement) {
     keyboardAngle = 0,
     turfCache: HTMLCanvasElement | null = null;
   let touchStart: P.Point | null = null;
-  let touchOffset = 0;
   const putterHead = () => ({ width: 21 / scale, halfHeight: 33 / scale });
-  const clubPoint = (p: P.Point): P.Point => ({ ...p, x: p.x + touchOffset });
   let objectScale = 1,
     shotScale = 1;
   const displayScale = () => (phase === "ready" ? objectScale : shotScale);
@@ -166,7 +164,8 @@ export function mountGolf(root: HTMLElement) {
       return seed / 4294967296;
     };
     g.beginPath();
-    g.roundRect(10, top, width - 20, laneH, 12);
+    const edge = window.matchMedia("(max-width: 720px)").matches ? 0 : 10;
+    g.roundRect(edge, top, width - edge * 2, laneH, 12);
     g.clip();
     const base = g.createLinearGradient(0, top, 0, top + laneH);
     base.addColorStop(0, "#4f831c");
@@ -388,7 +387,7 @@ export function mountGolf(root: HTMLElement) {
       ctx.restore();
       ctx.restore();
     }
-    if (followStart && performance.now() - followStart < 420) {
+    if (!drag && followStart && performance.now() - followStart < 420) {
       const t = Math.min(1, (performance.now() - followStart) / 420);
       drawPutter(
         followX - (55 / scale) * (1 - (1 - t) ** 3),
@@ -401,9 +400,9 @@ export function mountGolf(root: HTMLElement) {
         club.y,
         Math.max(-0.2, Math.min(0.25, (club.x - ball.x) * 0.16)),
       );
-    } else if (drag && phase === "ready") {
+    } else if (drag) {
       if (touchStart) {
-        const x = drag.x + touchOffset;
+        const x = drag.x;
         const y = drag.y;
         ctx.save();
         ctx.strokeStyle = "#fffdf3b0";
@@ -519,12 +518,9 @@ export function mountGolf(root: HTMLElement) {
     sound();
     phase = "rolling";
     previous = null;
-    drag = null;
-    touchStart = null;
-    touchOffset = 0;
     keyboardStart = null;
     last = 0;
-    canvas.classList.remove("is-dragging");
+    if (!drag) canvas.classList.remove("is-dragging");
     canvas.classList.add("is-rolling");
     $("golf-instructions").textContent = "Follow through · rolling…";
     say("Putt attempted.");
@@ -543,8 +539,12 @@ export function mountGolf(root: HTMLElement) {
     if (drag) {
       if (drag.id !== e.pointerId) return;
       drag = { ...p, id: e.pointerId };
-      const current = clubPoint(p);
-      const hit = P.impact(previous, current, ball, putterHead(), objectScale);
+      e.preventDefault();
+      const current = p;
+      const hit =
+        phase === "ready"
+          ? P.impact(previous, current, ball, putterHead(), objectScale)
+          : null;
       if (hit) strike(hit.vx, hit.vy);
       else {
         previous = current;
@@ -568,6 +568,7 @@ export function mountGolf(root: HTMLElement) {
     if (phase === "ready") draw();
   });
   listen(canvas, "pointerleave", () => {
+    if (drag) return;
     club = null;
     previous = null;
     if (phase === "ready") draw();
@@ -575,24 +576,12 @@ export function mountGolf(root: HTMLElement) {
   listen(canvas, "pointerdown", (e) => {
     unlockAudio();
     if (phase !== "ready" || e.button !== 0 || drag) return;
-    const p = point(e),
-      tolerance = (e.pointerType === "touch" ? 48 : 28) / scale;
+    const p = point(e);
     const touch = e.pointerType === "touch";
-    if (touch) {
-      if (
-        p.x < ball.x - tolerance ||
-        Math.abs(p.y - ball.y) > 33 / scale + c.ballRadius * objectScale
-      )
-        return;
-    } else if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
     drag = { ...p, id: e.pointerId };
     touchStart = touch ? p : null;
-    touchOffset =
-      touch && p.x < ball.x + c.ballRadius * objectScale + 8 / scale
-        ? ball.x + c.ballRadius * objectScale + 8 / scale - p.x
-        : 0;
     root.classList.add("is-interacting");
-    previous = clubPoint(p);
+    previous = p;
     canvas.setPointerCapture(e.pointerId);
     canvas.focus({ preventScroll: true });
     canvas.classList.add("is-dragging");
@@ -606,13 +595,12 @@ export function mountGolf(root: HTMLElement) {
   });
   function cancelInput() {
     touchStart = null;
-    touchOffset = 0;
     root.classList.remove("is-interacting");
     drag = null;
     previous = null;
     keyboardStart = null;
     canvas.classList.remove("is-dragging");
-    if (phase === "ready") draw();
+    draw();
   }
   listen(canvas, "pointercancel", cancelInput);
   listen(canvas, "lostpointercapture", () => {
@@ -672,6 +660,9 @@ export function mountGolf(root: HTMLElement) {
   });
   visibilityObserver.observe(canvas);
   canvas.addEventListener("contextrestored", resize, { signal: events.signal });
+  listen(root, "selectstart", (event) => event.preventDefault());
+  listen(root, "dragstart", (event) => event.preventDefault());
+  listen(canvas, "contextmenu", (event) => event.preventDefault());
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   const refresh = () => {
