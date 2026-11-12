@@ -1,41 +1,20 @@
 import { useEffect, useState } from "react";
 import { Home } from "./Home";
 import { Resume } from "./Resume";
-import { ProjectPage } from "./Project";
-import { projects } from "./projects";
 
 export function App() {
   const [now, setNow] = useState(new Date());
   const path = window.location.pathname;
   const home = path === "/";
-  const project = projects.find(
-    (p) => path === `/projects/${p.id}/` || path === `/projects/${p.id}`,
-  );
   useEffect(() => {
-    document.title = project
-      ? `${project.name} — Gab Espineli`
-      : path === "/resume.html"
-        ? "Résumé — Gab Espineli"
-        : home
-          ? "Gab Espineli — Software built around people"
-          : "Page not found — Gab Espineli";
+    document.title = "Gab Espineli";
     const timer = setInterval(() => setNow(new Date()), 60000);
     const controller = new AbortController();
     document.addEventListener(
       "click",
-      async (event) => {
+      (event) => {
         const target = event.target as Element;
         if (target.closest(".print-button")) window.print();
-        if (target.closest(".copy-email")) {
-          const status = document.querySelector("#copy-status");
-          if (!status) return;
-          try {
-            await navigator.clipboard.writeText("gabespineli@gmail.com");
-            status.textContent = "Email address copied.";
-          } catch {
-            status.textContent = "Select and copy: gabespineli@gmail.com";
-          }
-        }
       },
       { signal: controller.signal },
     );
@@ -63,7 +42,7 @@ export function App() {
       clearInterval(timer);
       controller.abort();
     };
-  }, [path, home, project]);
+  }, [path, home]);
   return (
     <>
       <a className="skip" href="#main">
@@ -75,7 +54,7 @@ export function App() {
         </a>
         <nav aria-label="Main navigation">
           <a href={`${home ? "" : "/"}#work`}>Work</a>
-          <a href={`${home ? "" : "/"}#about`}>About</a>
+          <a href={`${home ? "" : "/"}#education`}>About</a>
           <a href={`${home ? "" : "/"}#contact`}>Contact</a>
         </nav>
         <div className="desktop-clock">
@@ -95,8 +74,6 @@ export function App() {
       </header>
       {home ? (
         <Home />
-      ) : project ? (
-        <ProjectPage project={project} />
       ) : path === "/resume.html" ? (
         <Resume />
       ) : (
@@ -108,9 +85,8 @@ export function App() {
         </main>
       )}
       <footer>
-        <span>© 2026 Gab Espineli</span>
-        <span>Made with care, in the Philippines.</span>
-        <a href="#top">Back to top ↑</a>
+        <span>Gab Espineli</span>
+        <span className="footer-copyright">© 2026</span>
       </footer>
     </>
   );

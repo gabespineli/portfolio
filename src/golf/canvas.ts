@@ -94,9 +94,10 @@ export function mountGolf(root: HTMLElement) {
     keyboardStart: number | null = null,
     keyboardAngle = 0,
     turfCache: HTMLCanvasElement | null = null;
+  let touchStart: P.Point | null = null;
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const hint = coarse
-    ? "Pull right from the ball, then release."
+    ? "Swipe left from the ball to putt."
     : "Move right to draw back, then sweep left to putt.";
   $("golf-instructions").textContent = hint;
   const say = (text: string) => {
@@ -129,6 +130,8 @@ export function mountGolf(root: HTMLElement) {
     width = Math.max(240, r.width);
     height = r.height || 120;
     scale = (width - 56) / c.length;
+    root.style.setProperty("--golf-ball-x", `${sx(c.start.x)}px`);
+    root.style.setProperty("--golf-ball-y", `${height / 2}px`);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
@@ -479,6 +482,7 @@ export function mountGolf(root: HTMLElement) {
     vx = assisted.vx;
     vy = assisted.vy;
     if (phase !== "ready" || !P.shoot(ball, vx, vy)) return false;
+    root.classList.add("has-putted");
     followX = ball.x + c.ballRadius;
     followY = ball.y;
     followStart = performance.now();
@@ -537,6 +541,8 @@ export function mountGolf(root: HTMLElement) {
       tolerance = 28 / scale;
     if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
     drag = { ...p, id: e.pointerId };
+    touchStart = e.pointerType === "touch" ? p : null;
+    root.classList.add("is-interacting");
     previous = null;
     canvas.setPointerCapture(e.pointerId);
     canvas.focus({ preventScroll: true });
@@ -554,10 +560,20 @@ export function mountGolf(root: HTMLElement) {
     previous = null;
     canvas.classList.remove("is-dragging");
     if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
-    if (dx < -0.04) strike(dx * 3.25, dy * 3.25);
+    root.classList.remove("is-interacting");
+    if (touchStart && (touchStart.x - p.x) * scale > 12) {
+      const elapsed = Math.max(0.08, (p.time - touchStart.time) / 1000);
+      strike(
+        ((p.x - touchStart.x) / elapsed) * 0.88,
+        ((p.y - touchStart.y) / elapsed) * 0.22,
+      );
+    } else if (dx < -0.04) strike(dx * 3.25, dy * 3.25);
     else draw();
+    touchStart = null;
   });
   function cancelInput() {
+    touchStart = null;
+    root.classList.remove("is-interacting");
     drag = null;
     previous = null;
     keyboardStart = null;

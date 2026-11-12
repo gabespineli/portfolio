@@ -79,3 +79,9 @@ The integration test uses only the local API and adds real test shots to the loc
 - `wrangler.jsonc`: Worker hosting and database binding.
 
 Changes to frontend content use Vite hot reload. The Worker reloads when its TypeScript source changes. `npm run build` checks both frontend and backend TypeScript and produces the frontend in `dist`.
+
+## Vercel frontend hosting
+
+`vercel.json` configures the Vite production build in `dist`. The portfolio includes the supplied résumé PDF and static project/profile images. Project cards have no internal detail pages; only WTP Coffee links to its external website.
+
+The golf game runs in the browser on Vercel, but its shared counters still require the Cloudflare Worker/D1 backend described above. That backend is not configured by a Vercel frontend deployment. Without it, the game remains playable and shared counters are unavailable. Local database totals are not production totals.

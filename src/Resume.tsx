@@ -41,7 +41,7 @@ export function Resume() {
         {"CIVI · Student Researcher"}
         <br />
         {
-          "S.P.R.I.N.T. · Associate Vice President, Socio-Civic Committee · Sep 2025–Sep 2026"
+          "S.P.R.I.N.T. · Associate Vice President, Socio-Civic Committee · Sep 2025 to Sep 2026"
         }
       </p>
       <h2>{"Skills"}</h2>

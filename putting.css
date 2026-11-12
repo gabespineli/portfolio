@@ -26,3 +26,95 @@ body{background-color:var(--paper)}.hero h1 em,.contact-title em{color:#557a47}.
 .experience-with-stack:is(:hover,:focus-within) .tech-tile{opacity:1;transform:translateY(var(--lift)) rotate(var(--tilt)) scale(1)}
 .experience-with-stack:is(:hover,:focus-within) .tech-tile:is(:hover,:focus-visible){transform:translateY(-9px) rotate(0) scale(1.08);transition-delay:0s;z-index:5}
 @media(prefers-reduced-motion:reduce){.experience-with-stack .tech-fan,.experience-with-stack .tech-tile{transition:none}}
+
+/* Decorative window chrome, without pretend minimize/maximize controls. */
+.window-decor{display:flex;gap:4px;align-items:center;pointer-events:none}
+.window-bar .window-decor i{position:relative;display:block;width:9px;height:9px;border-radius:50%;border:1px solid #b86b60;background:linear-gradient(#ffb6a9,#e76d5c);box-shadow:inset 0 1px 1px #ffffffa0}
+.window-bar .window-decor i:nth-child(2){border-color:#ba963e;background:linear-gradient(#ffe4a1,#e8b746)}
+.window-bar .window-decor i:nth-child(3){border-color:#579c57;background:linear-gradient(#b4e7a5,#6fbc64)}
+.window-bar .window-decor i::before,.window-bar .window-decor i::after{content:none}
+#experience .entry-top{align-items:baseline;gap:16px;flex-wrap:wrap}
+#experience .date{font-size:15px;font-weight:400;line-height:1.5;color:#8a918a;white-space:normal}
+#experience .entry-top h3{position:relative}
+.company-logo-placeholder{position:absolute;right:calc(100% + 12px);top:1px;width:25px;height:25px;display:grid;place-items:center;border:1px dashed #b8c4b3;border-radius:6px;background:#eaf0e5;color:#7a8970;font-size:9px;font-weight:500;letter-spacing:0}
+div.project:hover{color:inherit}
+
+@media(max-width:720px){#experience .experience-with-stack{padding-left:36px}#experience .date{font-size:14px}#experience .entry-top{gap:4px 12px}.company-logo-placeholder{right:calc(100% + 10px);width:24px;height:24px}}
+
+.project-heading .badge.latest{display:inline-block;margin-left:0;font-size:9px;transform:none}
+a.project:hover .project-heading .badge.latest{transform:none}
+
+/* Education uses the same date hierarchy as experience at each breakpoint. */
+#education .entry-top{margin-right:0;align-items:baseline;gap:16px;flex-wrap:wrap}
+#education .date{font-size:15px;font-weight:400;line-height:1.5;color:#8a918a;white-space:normal}
+#education h3{position:relative}
+.education-logo{position:absolute;right:calc(100% + 12px);top:0;width:32px;height:32px;object-fit:contain;border-radius:6px}
+@media(max-width:720px){#education .experience{padding-left:42px}#education .date{font-size:14px}#education .entry-top{gap:4px 12px}.education-logo{right:calc(100% + 10px)}}
+
+/* A shared footprint keeps company and education marks aligned. */
+.company-logo,.education-logo{position:absolute;right:calc(100% + 12px);top:1px;width:25px;height:25px;object-fit:contain;border-radius:5px}
+@media(max-width:720px){#education .experience{padding-left:36px}.company-logo,.education-logo{right:calc(100% + 10px);width:24px;height:24px}}
+
+/* Blend white logo backgrounds into the paper without altering brand artwork. */
+.company-logo[src="/logos/cleanhaul.jpg"],.education-logo[src="/logos/dlsu.png"]{mix-blend-mode:multiply}
+
+.project-cover-image{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;border:1px solid #cbd5c5;border-radius:2px;background:#f6f7f1}
+
+/* Every project window lifts; only the external website reads as a link. */
+.project-item:hover .project-window,.project-item:focus-within .project-window{transform:translateY(-3px) rotate(-1deg);box-shadow:inset 0 1px 1px #fff,0 9px 17px #5e7e5d24}
+a.project .project-heading h3{text-decoration:none;text-underline-offset:4px;text-decoration-thickness:1px}
+a.project:hover .project-heading h3,a.project:focus-visible .project-heading h3{text-decoration:underline}
+a.project:hover,a.project:focus-visible{color:var(--green)}
+.project-visit{display:inline-block;margin-top:10px;color:var(--green);font-size:11px}
+@media(prefers-reduced-motion:reduce){.project-window{transition:none}.project-item:hover .project-window,.project-item:focus-within .project-window{transform:none}}
+
+.project-metric{color:inherit;font-weight:inherit;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;transition:color .16s,background-color .16s,box-shadow .16s}
+.project-item:hover .project-metric,.project-item:focus-within .project-metric{color:#315d2c;background:#dcebcf;box-shadow:2px 0 #dcebcf,-2px 0 #dcebcf;font-weight:600}
+@media(prefers-reduced-motion:reduce){.project-metric{transition:none}}
+
+footer{font-size:14px}
+@media(max-width:720px){footer{font-size:13px}}
+
+/* Section labels follow the project-title sizes across existing breakpoints. */
+.section-label{font-size:16px}
+@media(max-width:1050px){.section-label{font-size:15px}}
+@media(max-width:380px){.section-label{font-size:17px}}
+.section-reveal{opacity:1;transform:translateY(0);transition:opacity .85s ease,transform .85s cubic-bezier(.2,.65,.3,1)}
+.section-reveal.reveal-pending:not(:focus-within){opacity:0;transform:translateY(14px)}
+@media(prefers-reduced-motion:reduce){.section-reveal,.section-reveal.reveal-pending:not(:focus-within){opacity:1;transform:none;transition:none}}
+@media print{.section-reveal,.section-reveal.reveal-pending:not(:focus-within){opacity:1;transform:none;transition:none}}
+
+#experience .date,#education .date{font-size:14px}
+footer>span.footer-copyright{display:inline}
+
+#about .section-content>p,#contact .section-content>p{color:#000}
+
+.hello-sticker{translate:0 20px}
+
+/* Hidden tools take no space; expand the row gently when requested. */
+#experience .experience-with-stack{padding-right:0;min-height:0}
+#experience .entry-top{margin-right:0}
+.experience-tools{display:grid;grid-template-rows:0fr;transition:grid-template-rows .42s cubic-bezier(.2,.7,.3,1)}
+.experience-tools-inner{min-height:0;overflow:hidden}
+#experience .experience-tools .tech-fan{position:relative;top:auto;right:auto;margin:0;padding-top:20px;padding-bottom:28px}
+.experience-with-stack:is(:hover,:focus-within) .experience-tools{grid-template-rows:1fr}
+@media(prefers-reduced-motion:reduce){.experience-tools{transition:none}}
+
+/* Touch layouts reveal tools and metric emphasis through scrolling. */
+@media(max-width:720px),(hover:none) and (pointer:coarse){
+.experience-with-stack.scroll-active .experience-tools{grid-template-rows:1fr}
+.experience-with-stack.scroll-active .tech-fan{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);transition-delay:0s}
+.experience-with-stack.scroll-active .tech-tile{opacity:1;transform:translateY(var(--lift)) rotate(var(--tilt)) scale(1)}
+.experience-with-stack.scroll-active .tech-tile:is(:hover,:focus-visible){transform:translateY(-9px) rotate(0) scale(1.08)}
+.project-item.scroll-active .project-metric{color:#315d2c;background:#dcebcf;box-shadow:2px 0 #dcebcf,-2px 0 #dcebcf;font-weight:600}
+}
+
+.putting-strip{position:relative}
+.golf-swipe-hint{display:none;position:absolute;left:var(--golf-ball-x,85%);top:var(--golf-ball-y,56px);pointer-events:none;z-index:1;color:#fffdf3}
+.golf-swipe-hand{display:block;width:30px;height:33px;filter:drop-shadow(0 2px 2px #18351755);animation:golf-swipe 2.6s ease-in-out infinite;transform-origin:50% 15%}
+.golf-swipe-hand svg{display:block;width:100%;height:100%}
+@media(max-width:720px),(hover:none) and (pointer:coarse){.golf-swipe-hint{display:block}.has-putted .golf-swipe-hint,.is-interacting .golf-swipe-hint{display:none}}
+@keyframes golf-swipe{0%,12%{opacity:0;transform:translate(5px,-2px) rotate(8deg)}22%{opacity:1;transform:translate(0,0) rotate(0)}65%{opacity:1;transform:translate(-48px,0) rotate(-8deg)}80%,100%{opacity:0;transform:translate(-48px,0) rotate(-8deg)}}
+@media(prefers-reduced-motion:reduce){.golf-swipe-hand{animation:none;transform:translate(-8px,0)}}
+
+.profile-photo{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:3px}
