@@ -5,3 +5,6 @@ outputs/
 .env.*
 !.env.example
 .DS_Store
+.wrangler/
+.dev.vars
+coverage/
