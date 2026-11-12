@@ -59,10 +59,10 @@ export function Golf() {
       />
       <span id="golf-keyboard" className="sr-only">
         Mouse: move right for the backswing, then left through the ball for the
-        downswing and follow through. Touch: press near the ball, drag left with
-        your thumb, then lift to putt. Slow drags work too; drag farther for
-        more power. You can also pull right and release. Keyboard: hold Space to
-        draw back and release to putt. Left and right arrows adjust aim. Escape
+        downswing and follow through. Touch: press near or to the right of the
+        ball and drag your thumb left through it. Contact strikes immediately;
+        lifting your thumb does not take a shot. Keyboard: hold Space to draw
+        back and release to putt. Left and right arrows adjust aim. Escape
         cancels a stroke.
       </span>
     </section>

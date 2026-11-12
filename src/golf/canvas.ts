@@ -95,9 +95,12 @@ export function mountGolf(root: HTMLElement) {
     keyboardAngle = 0,
     turfCache: HTMLCanvasElement | null = null;
   let touchStart: P.Point | null = null;
+  let touchOffset = 0;
+  const putterHead = () => ({ width: 21 / scale, halfHeight: 33 / scale });
+  const clubPoint = (p: P.Point): P.Point => ({ ...p, x: p.x + touchOffset });
   const coarse = window.matchMedia?.("(pointer: coarse)").matches;
   const hint = coarse
-    ? "Swipe left from the ball to putt."
+    ? "Drag through the ball from right to left to putt."
     : "Move right to draw back, then sweep left to putt.";
   $("golf-instructions").textContent = hint;
   const say = (text: string) => {
@@ -394,8 +397,8 @@ export function mountGolf(root: HTMLElement) {
       );
     } else if (drag && phase === "ready") {
       if (touchStart) {
-        const x = ball.x + c.ballRadius + drag.x - touchStart.x;
-        const y = ball.y + (drag.y - touchStart.y) * 0.2;
+        const x = drag.x + touchOffset;
+        const y = drag.y;
         ctx.save();
         ctx.strokeStyle = "#fffdf3b0";
         ctx.lineWidth = 1.5;
@@ -510,6 +513,8 @@ export function mountGolf(root: HTMLElement) {
     phase = "rolling";
     previous = null;
     drag = null;
+    touchStart = null;
+    touchOffset = 0;
     keyboardStart = null;
     last = 0;
     canvas.classList.remove("is-dragging");
@@ -531,7 +536,13 @@ export function mountGolf(root: HTMLElement) {
     if (drag) {
       if (drag.id !== e.pointerId) return;
       drag = { ...p, id: e.pointerId };
-      draw();
+      const current = clubPoint(p);
+      const hit = P.impact(previous, current, ball, putterHead());
+      if (hit) strike(hit.vx, hit.vy);
+      else {
+        previous = current;
+        draw();
+      }
       return;
     }
     if (
@@ -543,7 +554,7 @@ export function mountGolf(root: HTMLElement) {
       swing = previous && p.x > previous.x ? "Backswing" : "Downswing";
       $("golf-instructions").textContent =
         `${swing} · sweep through the ball to the left`;
-      const hit = P.impact(previous, p, ball);
+      const hit = P.impact(previous, p, ball, putterHead());
       if (hit) strike(hit.vx, hit.vy);
     }
     previous = phase === "ready" ? p : null;
@@ -559,11 +570,22 @@ export function mountGolf(root: HTMLElement) {
     if (phase !== "ready" || e.button !== 0 || drag) return;
     const p = point(e),
       tolerance = (e.pointerType === "touch" ? 48 : 28) / scale;
-    if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
+    const touch = e.pointerType === "touch";
+    if (touch) {
+      if (
+        p.x < ball.x - tolerance ||
+        Math.abs(p.y - ball.y) > 33 / scale + c.ballRadius
+      )
+        return;
+    } else if (Math.hypot(p.x - ball.x, p.y - ball.y) > tolerance) return;
     drag = { ...p, id: e.pointerId };
-    touchStart = e.pointerType === "touch" ? p : null;
+    touchStart = touch ? p : null;
+    touchOffset =
+      touch && p.x < ball.x + c.ballRadius + 8 / scale
+        ? ball.x + c.ballRadius + 8 / scale - p.x
+        : 0;
     root.classList.add("is-interacting");
-    previous = null;
+    previous = clubPoint(p);
     canvas.setPointerCapture(e.pointerId);
     canvas.focus({ preventScroll: true });
     canvas.classList.add("is-dragging");
@@ -571,29 +593,13 @@ export function mountGolf(root: HTMLElement) {
     draw();
   });
   listen(canvas, "pointerup", (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const p = point(e),
-      dx = ball.x - p.x,
-      dy = ball.y - p.y,
-      id = drag.id;
-    drag = null;
-    previous = null;
-    canvas.classList.remove("is-dragging");
-    if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
-    root.classList.remove("is-interacting");
-    if (touchStart) {
-      const shot = P.thumbStroke(
-        (p.x - touchStart.x) * scale,
-        (p.y - touchStart.y) * scale,
-      );
-      if (shot) strike(shot.vx, shot.vy);
-      else draw();
-    } else if (dx < -0.04) strike(dx * 3.25, dy * 3.25);
-    else draw();
-    touchStart = null;
+    if (canvas.hasPointerCapture(e.pointerId))
+      canvas.releasePointerCapture(e.pointerId);
+    if (drag && e.pointerId === drag.id) cancelInput();
   });
   function cancelInput() {
     touchStart = null;
+    touchOffset = 0;
     root.classList.remove("is-interacting");
     drag = null;
     previous = null;

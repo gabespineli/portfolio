@@ -142,3 +142,8 @@ footer>span.footer-copyright{display:inline}
 .putting-caption{font-size:12px}
 footer{font-size:15px}
 @media(max-width:720px){.intro-links{flex-wrap:wrap;gap:12px}.putting-caption{font-size:12px}footer{font-size:14px}}
+
+/* Keep the rotated fan inside the reveal's clipping boundary. The negative
+   margin preserves its text alignment while the inner gutter protects edges. */
+.experience-tools{margin-inline:-12px}
+.experience-tools-inner{padding-inline:12px}

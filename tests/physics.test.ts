@@ -5,7 +5,6 @@ import {
   step,
   impact,
   assistedStroke,
-  thumbStroke,
   course,
 } from "../src/golf/physics";
 import { simulate } from "../worker/index";
@@ -85,14 +84,43 @@ it("captures deeply overlapping fast entries consistently across frame rates", (
   }
 });
 
-it("accepts slow thumb drags in either direction and ignores taps or vertical scrolling", () => {
-  for (const travel of [-40, 40, -80]) {
-    const shot = thumbStroke(travel, 0)!;
-    expect(shot.vx).toBeLessThan(0);
-    const assisted = assistedStroke(shot.vx, shot.vy);
-    expect(simulate(assisted.vx, assisted.vy)?.made).toBe(1);
+it("uses the full visible putter head at desktop and phone scales", () => {
+  for (const scale of [40, 150]) {
+    const ball = createBall();
+    const head = { width: 21 / scale, halfHeight: 33 / scale };
+    const face = ball.x + course.ballRadius;
+    const y = ball.y + head.halfHeight + course.ballRadius * 0.5;
+    expect(
+      impact(
+        { x: face + 0.12, y, time: 0 },
+        { x: face - 0.12, y, time: 80 },
+        ball,
+        head,
+      )?.vx,
+    ).toBeLessThan(0);
+    expect(
+      impact(
+        { x: face + 0.12, y: y + 0.2, time: 0 },
+        { x: face - 0.12, y: y + 0.2, time: 80 },
+        ball,
+        head,
+      ),
+    ).toBeNull();
+    expect(
+      impact(
+        { x: face - 0.01, y: 0, time: 0 },
+        { x: face - 0.1, y: 0, time: 80 },
+        ball,
+        head,
+      )?.vx,
+    ).toBeLessThan(0);
+    expect(
+      impact(
+        { x: face - 0.12, y: 0, time: 0 },
+        { x: face + 0.12, y: 0, time: 80 },
+        ball,
+        head,
+      ),
+    ).toBeNull();
   }
-  expect(thumbStroke(4, 0)).toBeNull();
-  expect(thumbStroke(12, 50)).toBeNull();
-  expect(thumbStroke(NaN, 0)).toBeNull();
 });

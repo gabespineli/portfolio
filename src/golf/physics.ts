@@ -109,17 +109,28 @@ function step(ball: Ball, dt: number) {
   }
   return "moving";
 }
-function impact(previous: Point | null, current: Point, ball: Ball) {
+function impact(
+  previous: Point | null,
+  current: Point,
+  ball: Ball,
+  head = { width: 0, halfHeight: 0.055 },
+) {
   if (!previous || current.time <= previous.time) return null;
   const dt = (current.time - previous.time) / 1000,
     dx = current.x - previous.x,
     dy = current.y - previous.y,
     face = ball.x + course.ballRadius;
-  if (dt > 0.15 || dx >= 0 || previous.x < face || current.x > face)
+  if (
+    dt > 0.15 ||
+    dx >= 0 ||
+    previous.x + head.width < ball.x - course.ballRadius ||
+    current.x > face
+  )
     return null;
-  const fraction = (face - previous.x) / dx,
+  // Sweep the entire head, including starts already overlapping its face.
+  const fraction = Math.max(0, Math.min(1, (face - previous.x) / dx)),
     y = previous.y + dy * fraction;
-  if (Math.abs(y - ball.y) > course.ballRadius + 0.055) return null;
+  if (Math.abs(y - ball.y) > course.ballRadius + head.halfHeight) return null;
   const vx = Math.max(-4.2, (dx / dt) * 0.88),
     vy = Math.max(-0.65, Math.min(0.65, (dy / dt) * 0.22));
   return vx <= -0.12 ? { vx, vy } : null;
@@ -136,21 +147,5 @@ export function assistedStroke(vx: number, vy = 0) {
   return {
     vx: Math.sign(vx) * speed * Math.cos(angle),
     vy: speed * Math.sin(angle),
-  };
-}
-
-// Thumb drags use CSS-pixel travel, not elapsed time: a slow drag is a putt
-// too. Positive travel retains the existing pull-back-and-release gesture.
-export function thumbStroke(dx: number, dy: number) {
-  if (
-    !Number.isFinite(dx) ||
-    !Number.isFinite(dy) ||
-    Math.abs(dx) < 10 ||
-    Math.abs(dy) > Math.abs(dx) * 1.5
-  )
-    return null;
-  return {
-    vx: -Math.min(4.2, 1.9 + Math.abs(dx) / 35),
-    vy: Math.max(-0.25, Math.min(0.25, dy / 300)),
   };
 }
