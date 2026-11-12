@@ -129,3 +129,16 @@ footer>span.footer-copyright{display:inline}
 @media(prefers-reduced-motion:reduce){.scroll-interactions .project-item.scroll-active .project-window{transform:none}}
 
 .project-copy>p{font-size:13px}
+
+/* Readable type hierarchy across desktop and phones. */
+:root{--portfolio-title-size:17px;--portfolio-body-size:16px;--portfolio-small-size:15px}
+.section-label,.project-heading h3,#experience h3,#education h3{font-size:var(--portfolio-title-size)}
+.intro p,.project-copy>p,#experience .experience p,#education .experience p,#about .section-content>p,#contact .section-content>p{font-size:var(--portfolio-body-size);line-height:1.75}
+#experience .experience .role,#education .experience .role,#experience .date,#education .date,.intro-links a,.project-visit{font-size:var(--portfolio-small-size)}
+#education .experience .stack{font-size:var(--portfolio-small-size)!important}
+.site-header nav a{font-size:14px}
+.project-heading .badge.latest{font-size:11px}
+.tech-caption,.tech-tooltip{font-size:11px}
+.putting-caption{font-size:12px}
+footer{font-size:15px}
+@media(max-width:720px){.intro-links{flex-wrap:wrap;gap:12px}.putting-caption{font-size:12px}footer{font-size:14px}}
