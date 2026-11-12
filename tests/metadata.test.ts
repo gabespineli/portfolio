@@ -9,8 +9,11 @@ it("exposes sharing metadata in initial HTML and ships its correctly sized previ
     )?.[1];
   expect(field("og:type")).toBe("website");
   expect(field("og:url")).toBe("https://gabespineli.vercel.app/");
-  expect(field("og:title")).toBe("Gab Espineli — Software Developer");
+  expect(field("og:title")).toBe("Gab's Portfolio");
+  expect(field("twitter:title")).toBe(field("og:title"));
+  expect(field("description")).toBe("Explore my work.");
   expect(field("og:description")).toBe(field("description"));
+  expect(field("twitter:description")).toBe(field("description"));
   expect(field("twitter:card")).toBe("summary_large_image");
   expect(field("twitter:image")).toBe(field("og:image"));
   const imageUrl = new URL(field("og:image")!);
