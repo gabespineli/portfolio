@@ -54,29 +54,61 @@ export function Home() {
     const cards = targets.map((target) =>
       target.closest<HTMLElement>(".experience-with-stack, .project-item")!,
     );
-    let observer: IntersectionObserver | null = null;
-    const update = () => {
-      observer?.disconnect();
-      cards.forEach((card) => card.classList.remove("scroll-active"));
-      root.current?.classList.toggle("scroll-interactions", phone.matches);
-      if (!phone.matches || !("IntersectionObserver" in window)) return;
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const card = entry.target.closest(
-              ".experience-with-stack, .project-item",
-            );
-            card?.classList.toggle("scroll-active", entry.isIntersecting);
-          }
-        },
-        { threshold: 0, rootMargin: "-8% 0px -18% 0px" },
+    let frame = 0;
+    let active: HTMLElement | null = null;
+    const select = (next: HTMLElement | null) => {
+      if (next === active) return;
+      active = next;
+      cards.forEach((card) =>
+        card.classList.toggle("scroll-active", card === next),
       );
-      targets.forEach((target) => observer?.observe(target));
+    };
+    const measure = () => {
+      frame = 0;
+      if (!phone.matches) return;
+      const height = window.innerHeight;
+      let nearest: HTMLElement | null = null;
+      let distance = Infinity;
+      cards.forEach((card, index) => {
+        const bounds = card.getBoundingClientRect();
+        if (bounds.bottom <= height * 0.08 || bounds.top >= height * 0.9)
+          return;
+        const heading = targets[index].getBoundingClientRect();
+        const offset = Math.abs(
+          heading.top + heading.height / 2 - height * 0.42,
+        );
+        if (offset < distance) {
+          distance = offset;
+          nearest = card;
+        }
+      });
+      select(nearest);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const update = () => {
+      select(null);
+      root.current?.classList.toggle("scroll-interactions", phone.matches);
+      schedule();
+    };
+    const onFocus = (event: FocusEvent) => {
+      if (!phone.matches || !(event.target instanceof Element)) return;
+      const card = event.target.closest<HTMLElement>(
+        ".experience-with-stack, .project-item",
+      );
+      if (card && cards.includes(card)) select(card);
     };
     update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    root.current?.addEventListener("focusin", onFocus);
     phone.addEventListener("change", update);
     return () => {
-      observer?.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      root.current?.removeEventListener("focusin", onFocus);
       phone.removeEventListener("change", update);
       cards.forEach((card) => card.classList.remove("scroll-active"));
       root.current?.classList.remove("scroll-interactions");
