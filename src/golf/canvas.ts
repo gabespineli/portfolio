@@ -407,12 +407,6 @@ export function mountGolf(root: HTMLElement) {
         ctx.save();
         ctx.strokeStyle = "#fffdf3b0";
         ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 4]);
-        ctx.beginPath();
-        ctx.moveTo(sx(ball.x), sy(ball.y));
-        ctx.lineTo(sx(drag.x), sy(drag.y));
-        ctx.stroke();
-        ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(sx(drag.x), sy(drag.y), 15, 0, Math.PI * 2);
         ctx.stroke();
@@ -517,10 +511,17 @@ export function mountGolf(root: HTMLElement) {
     followStart = performance.now();
     sound();
     phase = "rolling";
+    const pointerId = drag?.id;
+    drag = null;
+    touchStart = null;
+    club = null;
     previous = null;
+    if (pointerId !== undefined && canvas.hasPointerCapture(pointerId)) {
+      canvas.releasePointerCapture(pointerId);
+    }
     keyboardStart = null;
     last = 0;
-    if (!drag) canvas.classList.remove("is-dragging");
+    canvas.classList.remove("is-dragging");
     canvas.classList.add("is-rolling");
     $("golf-instructions").textContent = "Follow through · rolling…";
     say("Putt attempted.");
