@@ -99,8 +99,6 @@ export default {
           objectScale > 4
         )
           return json({ error: "Invalid shot" }, 400);
-        const result = simulate(vx, vy, objectScale);
-        if (!result) return json({ error: "Invalid velocity" }, 400);
         const minute = Math.floor(now / 60000);
         // Retain only a short-lived hash, never a raw visitor IP.
         const hash = await crypto.subtle.digest(
@@ -112,16 +110,22 @@ export default {
         const key = Array.from(new Uint8Array(hash), (x) =>
           x.toString(16).padStart(2, "0"),
         ).join("");
-        const results = await env.DB.batch([
-          env.DB.prepare(
-            "INSERT INTO golf_rate_limits (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count",
-          ).bind(key, now + 120000),
-          env.DB.prepare(
-            "INSERT INTO golf_shots (id,made,created_at,ready_at) SELECT ?,?,?,? WHERE (SELECT count FROM golf_rate_limits WHERE key=?)<=30 ON CONFLICT(id) DO NOTHING",
-          ).bind(id, result.made, now, now + result.duration, key),
-        ]);
-        if (Number((results[0].results[0] as { count: number })?.count) > 30)
+        // Reserve a slot atomically. Rejected requests neither increment the
+        // limiter nor run physics, even when several requests arrive together.
+        const slot = await env.DB.prepare(
+          "INSERT INTO golf_rate_limits (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 WHERE count<30 RETURNING count",
+        )
+          .bind(key, now + 120000)
+          .first<{ count: number }>();
+        if (!slot)
           return json({ error: "Please wait before taking more shots" }, 429);
+        const result = simulate(vx, vy, objectScale);
+        if (!result) return json({ error: "Invalid velocity" }, 400);
+        await env.DB.prepare(
+          "INSERT INTO golf_shots (id,made,created_at,ready_at) VALUES (?,?,?,?) ON CONFLICT(id) DO NOTHING",
+        )
+          .bind(id, result.made, now, now + result.duration)
+          .run();
         return counts(env, request);
       }
       const match = url.pathname.match(/^\/api\/golf\/shots\/([^/]+)\/finish$/);

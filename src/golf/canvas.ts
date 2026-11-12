@@ -657,7 +657,11 @@ export function mountGolf(root: HTMLElement) {
   // Mobile browsers may discard an offscreen canvas surface. Rebuild its
   // cached turf and backing store when it returns to the viewport.
   const visibilityObserver = new IntersectionObserver((entries) => {
-    if (entries.some((entry) => entry.isIntersecting)) resize();
+    inView = entries.some((entry) => entry.isIntersecting);
+    if (inView) {
+      resize();
+      void refresh();
+    }
   });
   visibilityObserver.observe(canvas);
   canvas.addEventListener("contextrestored", resize, { signal: events.signal });
@@ -666,17 +670,38 @@ export function mountGolf(root: HTMLElement) {
   listen(canvas, "contextmenu", (event) => event.preventDefault());
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
-  const refresh = () => {
-    if (document.visibilityState !== "hidden")
-      api
-        .getCounts()
-        .then(showCounts)
-        .catch(() => {
-          if (disposed) return;
-          $("golf-scope").textContent = "Offline";
-          say("Shared counters are unavailable. You can still play.");
-        });
+  let inView = false;
+  let refreshing = false;
+  let failures = 0;
+  let nextRefresh = 0;
+  const refresh = async () => {
+    if (
+      disposed ||
+      !inView ||
+      refreshing ||
+      document.visibilityState === "hidden" ||
+      Date.now() < nextRefresh
+    )
+      return;
+    refreshing = true;
+    try {
+      const counts = await api.getCounts();
+      if (!disposed) showCounts(counts);
+      failures = 0;
+    } catch {
+      failures = Math.min(failures + 1, 4);
+      if (!disposed) {
+        $("golf-scope").textContent = "Offline";
+        say("Shared counters are unavailable. You can still play.");
+      }
+    } finally {
+      refreshing = false;
+      nextRefresh = Date.now() + Math.min(60000 * 2 ** failures, 600000);
+    }
   };
+  document.addEventListener("visibilitychange", () => {
+    void refresh();
+  }, { signal: events.signal });
   const poll = setInterval(refresh, 60000);
   resize();
   refresh();
