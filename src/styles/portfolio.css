@@ -2389,3 +2389,11 @@ footer {
     padding-inline: 0;
   }
 }
+
+/* The visual spill layer never intercepts links, scrolling, or golf input. */
+.golf-ball-overlay {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+  z-index: 2;
+}

@@ -13,8 +13,18 @@ export function mountGolf(root: HTMLElement) {
     });
   }
   const canvas = root.querySelector<HTMLCanvasElement>("#golf-course")!;
-  const ctx = canvas.getContext("2d")!;
+  let ctx = canvas.getContext("2d")!;
   if (!ctx) return () => {};
+  const courseContext = ctx;
+  // A non-interactive overlay lets the ball leave the turf without enlarging it.
+  const overlay = document.createElement("canvas");
+  overlay.className = "golf-ball-overlay";
+  overlay.setAttribute("aria-hidden", "true");
+  root.appendChild(overlay);
+  const ballContext = overlay.getContext("2d")!;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let respawnStart: number | null = null;
+  let overflow = 120;
   const c = P.course,
     $ = (id: string) => root.querySelector<HTMLElement>("#" + id)!;
   const api = createPuttingStore(),
@@ -142,6 +152,12 @@ export function mountGolf(root: HTMLElement) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
+    overflow = Math.max(100, scale * 0.8);
+    overlay.style.top = `${-overflow}px`;
+    overlay.style.width = `${width}px`;
+    overlay.style.height = `${height + overflow * 2}px`;
+    overlay.width = Math.round(width * dpr);
+    overlay.height = Math.round((height + overflow * 2) * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     previous = null;
     turfCache = buildTurf();
@@ -305,19 +321,38 @@ export function mountGolf(root: HTMLElement) {
     ctx.beginPath();
     ctx.arc(hx, hy, holeRadius, 0, Math.PI);
     ctx.stroke();
+    ctx = ballContext;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height + overflow * 2);
+    ctx.translate(0, overflow);
+    ctx.save();
+    // Triangular spill area widens toward the cup, with room around the tee.
+    ctx.beginPath();
+    ctx.moveTo(width, height / 2 - 40);
+    ctx.lineTo(0, -overflow);
+    ctx.lineTo(0, height + overflow);
+    ctx.lineTo(width, height / 2 + 40);
+    ctx.closePath();
+    ctx.clip();
     if (!ball.sunk || drop) {
       const progress = drop
         ? Math.min(1, (performance.now() - drop.start) / dropDuration)
         : 0;
       const settle = 1 - (1 - Math.min(1, progress / 0.55)) ** 3;
-      const shrink = 1 - 0.28 * progress ** 2;
+      const arrival =
+        respawnStart === null
+          ? 1
+          : Math.min(1, (performance.now() - respawnStart) / 480);
+      const shrink = (1 - 0.28 * progress ** 2) * (0.65 + 0.35 * arrival);
+
       const bx = drop ? sx(drop.x + (c.cup.x - drop.x) * settle) : sx(ball.x),
         by = drop
           ? sy(drop.y + (c.cup.y - drop.y) * settle) +
             progress ** 2 * holeRadius * 0.18
-          : sy(ball.y),
+          : sy(ball.y) - (1 - arrival) ** 3 * 30,
         r = c.ballRadius * scale * displayScale() * shrink;
       ctx.save();
+      ctx.globalAlpha = arrival;
       if (drop) {
         ctx.globalAlpha = 1 - progress ** 4;
         if (progress > 0.2) {
@@ -387,6 +422,8 @@ export function mountGolf(root: HTMLElement) {
       ctx.restore();
       ctx.restore();
     }
+    ctx.restore();
+    ctx = courseContext;
     if (!drag && followStart && performance.now() - followStart < 420) {
       const t = Math.min(1, (performance.now() - followStart) / 420);
       drawPutter(
@@ -432,7 +469,10 @@ export function mountGolf(root: HTMLElement) {
     drop = null;
     followStart = 0;
     ball = P.createBall();
-    phase = "ready";
+    phase = reducedMotion.matches ? "ready" : "respawning";
+    shotScale = objectScale;
+    respawnStart = phase === "respawning" ? performance.now() : null;
+    if (respawnStart !== null) raf = requestAnimationFrame(frame);
     previous = null;
     drag = null;
     keyboardStart = null;
@@ -456,6 +496,7 @@ export function mountGolf(root: HTMLElement) {
         : "Putt missed. A new ball will appear.",
     );
     const id = shotId;
+    if (!disposed) resetTimer = setTimeout(reset, 1200);
     try {
       await shotStarted;
       showCounts(await api.finishShot(id, made));
@@ -464,9 +505,17 @@ export function mountGolf(root: HTMLElement) {
         "Shot finished. Shared counters are unavailable. You can still play.",
       );
     }
-    if (!disposed) resetTimer = setTimeout(reset, 1200);
   }
   function frame(time: number) {
+    if (phase === "respawning") {
+      if (reducedMotion.matches || time - (respawnStart ?? time) >= 480) {
+        respawnStart = null;
+        phase = "ready";
+        raf = 0;
+      } else raf = requestAnimationFrame(frame);
+      draw();
+      return;
+    }
     if (phase === "sinking" && drop) {
       draw();
       if (time - drop.start < dropDuration) raf = requestAnimationFrame(frame);
@@ -699,14 +748,19 @@ export function mountGolf(root: HTMLElement) {
       nextRefresh = Date.now() + Math.min(60000 * 2 ** failures, 600000);
     }
   };
-  document.addEventListener("visibilitychange", () => {
-    void refresh();
-  }, { signal: events.signal });
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      void refresh();
+    },
+    { signal: events.signal },
+  );
   const poll = setInterval(refresh, 60000);
   resize();
   refresh();
   return () => {
     disposed = true;
+    overlay.remove();
     events.abort();
     observer.disconnect();
     visibilityObserver.disconnect();
