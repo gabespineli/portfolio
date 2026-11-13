@@ -204,11 +204,12 @@ export function Home() {
       </section>
       <section
         className={"section "}
-        id={"education"}
+        id={"about"}
         aria-labelledby={"education-title"}
       >
         <h2 id={"education-title"} className={"section-label"}>
-          {"Education &"}
+          <span id="education" />
+          {"About: education &"}
           <br />
           {"involvement"}
         </h2>
@@ -273,7 +274,7 @@ export function Home() {
       </section>
       <section
         className={"section about"}
-        id={"about"}
+        id={"personal"}
         aria-labelledby={"about-title"}
       >
         <h2 id={"about-title"} className={"section-label"}>
