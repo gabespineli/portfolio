@@ -1,7 +1,6 @@
 import { expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Home } from "../src/Home";
-import { Resume } from "../src/Resume";
 import { projects } from "../src/projects";
 
 it("preserves project links, golf placement and experience technology cards", () => {
@@ -15,8 +14,4 @@ it("preserves project links, golf placement and experience technology cards", ()
   expect(html).not.toContain("1,248");
   expect(html.match(/tech-stack tech-fan/g)).toHaveLength(3);
   expect(html).toContain('viewBox="0 0 32 32"');
-});
-
-it("renders the printable résumé", () => {
-  expect(renderToStaticMarkup(<Resume />)).toContain("Print / Save PDF");
 });

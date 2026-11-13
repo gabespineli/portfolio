@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Home } from "./Home";
-import { Resume } from "./Resume";
 
 export function App() {
   const [now, setNow] = useState(new Date());
@@ -10,14 +9,6 @@ export function App() {
     document.title = "Gab Espineli";
     const timer = setInterval(() => setNow(new Date()), 60000);
     const controller = new AbortController();
-    document.addEventListener(
-      "click",
-      (event) => {
-        const target = event.target as Element;
-        if (target.closest(".print-button")) window.print();
-      },
-      { signal: controller.signal },
-    );
     document.addEventListener(
       "pointerdown",
       (event) => {
@@ -43,7 +34,7 @@ export function App() {
         </a>
         <nav aria-label="Main navigation">
           <a href={`${home ? "" : "/"}#work`}>Work</a>
-          <a href={`${home ? "" : "/"}#education`}>About</a>
+          <a href={`${home ? "" : "/"}#about`}>About</a>
           <a href={`${home ? "" : "/"}#contact`}>Contact</a>
         </nav>
         <div className="desktop-clock">
@@ -63,8 +54,6 @@ export function App() {
       </header>
       {home ? (
         <Home />
-      ) : path === "/resume.html" ? (
-        <Resume />
       ) : (
         <main id="main" className="not-found">
           <p className="eyebrow">404</p>

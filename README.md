@@ -69,7 +69,7 @@ The integration test uses only the local API and adds real test shots to the loc
 ## Source map
 
 - `src/App.tsx`: shared shell and route selection.
-- `src/Home.tsx`, `src/Resume.tsx`, `src/Experience.tsx`: portfolio content.
+- `src/Home.tsx`, `src/Experience.tsx`, `src/TechnologyStack.tsx`: portfolio content.
 - `src/projects.ts`, `src/Project.tsx`: selected project summaries and preview cards.
 - `public/social-preview-v6.png`: current share-preview image, referenced by `index.html`.
 - `src/golf/`: React canvas lifecycle, controls, physics, and API client.
