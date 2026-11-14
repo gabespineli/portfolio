@@ -2397,3 +2397,6 @@ footer {
   pointer-events: none;
   z-index: 2;
 }
+
+/* The introduction starts directly below the navigation. */
+.hero .hero-bottom { margin-top: 0; }

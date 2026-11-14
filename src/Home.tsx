@@ -117,11 +117,8 @@ export function Home() {
   return (
     <main id={"main"} ref={root}>
       <section className={"hero"} aria-labelledby={"hero-title"}>
-        <h1 id={"hero-title"}>
-          {"Software built around"}
-          <br />
-          {"the "}
-          <em>{"people using it."}</em>
+        <h1 id={"hero-title"} className="sr-only">
+          Gab Espineli
         </h1>
         <div className={"hero-bottom"}>
           <figure className={"portrait"}>
