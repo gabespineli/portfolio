@@ -181,7 +181,7 @@ export function Home() {
       >
         <h2 id={"work-title"} className={"section-label"}>
           <span className={"folder-icon"} aria-hidden={"true"}></span>
-          {"Selected work"}
+          {"Projects"}
         </h2>
         <div className={"section-content"}>
           <ProjectList />
@@ -206,9 +206,7 @@ export function Home() {
       >
         <h2 id={"education-title"} className={"section-label"}>
           <span id="education" />
-          {"About: education &"}
-          <br />
-          {"involvement"}
+          {"Education & Involvement"}
         </h2>
         <div className={"section-content"}>
           <article className={"experience"}>

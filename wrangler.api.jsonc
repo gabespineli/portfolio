@@ -5,7 +5,7 @@
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "vars": {
-    "ALLOWED_ORIGIN": "https://gabespineli.vercel.app"
+    "ALLOWED_ORIGIN": "https://gabespineli.dev,https://www.gabespineli.dev,https://gabespineli.vercel.app"
   },
   "d1_databases": [
     {

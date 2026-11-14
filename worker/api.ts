@@ -1,4 +1,4 @@
-import golf, { type Env } from "./index";
+import golf, { allowedPortfolioOrigin, type Env } from "./index";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -6,7 +6,7 @@ export default {
     const url = new URL(request.url);
     const local = ["127.0.0.1", "localhost"].includes(url.hostname);
     const allowed =
-      origin === env.ALLOWED_ORIGIN ||
+      allowedPortfolioOrigin(origin, env) ||
       origin === url.origin ||
       (local && origin === "http://127.0.0.1:5173");
     if (origin && !allowed)

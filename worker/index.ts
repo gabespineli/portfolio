@@ -10,6 +10,16 @@ const json = (data: unknown, status = 200) =>
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+export function allowedPortfolioOrigin(origin: string | null, env: Env) {
+  return (
+    !!origin &&
+    (env.ALLOWED_ORIGIN ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .includes(origin)
+  );
+}
+
 export function simulate(vx: number, vy: number, objectScale = 1) {
   const ball = createBall();
   if (!shoot(ball, vx, vy)) return null;
@@ -50,7 +60,7 @@ export default {
       if (
         origin &&
         origin !== url.origin &&
-        origin !== env.ALLOWED_ORIGIN &&
+        !allowedPortfolioOrigin(origin, env) &&
         !localDev
       )
         return json({ error: "Origin not allowed" }, 403);
