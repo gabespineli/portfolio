@@ -122,54 +122,75 @@ export function Home() {
         </h1>
         <div className={"hero-bottom"}>
           <figure className={"portrait"}>
-            <div className={"profile-window"}>
-              <div className={"window-bar"}>
-                <span className={"window-icon"} aria-hidden={"true"}></span>
-                <span className={"window-filename"}>
-                  {"a-little-about-gab.jpg"}
-                </span>
-                <span className={"window-decor"} aria-hidden={"true"}>
-                  <i></i>
-                  <i></i>
-                  <i></i>
-                </span>
+            <div className="portrait-desktop">
+              <div className="profile-window profile-preview">
+                <div className={"window-bar"}>
+                  <span className={"window-icon"} aria-hidden={"true"}></span>
+                  <span className={"window-filename"}>{"Preview"}</span>
+                  <span className={"window-decor"} aria-hidden={"true"}>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                  </span>
+                </div>
+                <img
+                  className="profile-photo"
+                  src="/profile.png"
+                  alt="Portrait of Gab Espineli"
+                  width="400"
+                  height="400"
+                  fetchPriority="high"
+                />
               </div>
-              <img
-                className="profile-photo"
-                src="/profile.png"
-                alt="Portrait of Gab Espineli"
-                width="400"
-                height="400"
-                fetchPriority="high"
-              />
-            </div>
-            <div className={"hello-sticker"}>
-              <span>{"HELLO"}</span>
-              <small>{"my name is"}</small>
-              <strong>{"Gab."}</strong>
             </div>
           </figure>
-          <div className={"intro"}>
-            <p>
-              {
-                "I’m Gab, a Computer Science student at De La Salle University. If you need someone who can take a problem from the first conversation to a working product, that’s where I can help."
-              }
-            </p>
-            <p>
-              {
-                "I’ll work with you to define what needs to be built, make the technical decisions, and see it through deployment. You can expect clear communication, practical choices, and attention to how the software holds up when you use it."
-              }
-            </p>
-            <p className={"intro-links"}>
-              <a href={"#work"}>{"Explore my work "}</a>
-              <a
-                href={"/ESPINELI_RESUME.pdf"}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {"View résumé "}
-              </a>
-            </p>
+          <div className="intro intro-note">
+            <div className="window-bar intro-note-bar" aria-hidden="true">
+              <span className="window-icon" />
+              <span className="window-filename">hello.txt</span>
+              <span className="window-decor">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+            <div className="intro-note-body">
+              <p className="intro-name">Hey, I’m Gab.</p>
+              <p>
+                I study Computer Science at{" "}
+                <span className="intro-label">
+                  <img
+                    className="intro-school-logo"
+                    src="/logos/dlsu.png"
+                    alt=""
+                    width="18"
+                    height="18"
+                  />
+                  De La Salle
+                </span>{" "}
+                and build{" "}
+                <span className="intro-label">
+                  <img src="/web-app.svg" alt="" width="16" height="16" />
+                  web apps
+                </span>
+                , storefronts, and interactive experiences.
+              </p>
+              <p>
+                Have something in mind? I’ll help you work through the details
+                and turn it into software you can use. There’s a little golf
+                here, too.
+              </p>
+              <p className={"intro-links"}>
+                <a href={"#work"}>{"Explore my work "}</a>
+                <a
+                  href={"/ESPINELI_RESUME.pdf"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {"View résumé "}
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </section>
