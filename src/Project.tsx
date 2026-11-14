@@ -16,7 +16,7 @@ export function Art({ project: p }: { project: Project }) {
       </div>
       <img
         className="project-cover-image"
-        src={`/projects/${p.id}.png`}
+        src={`/projects/${p.id}.webp`}
         alt={`${p.name} project preview`}
         loading="lazy"
         decoding="async"

@@ -9,7 +9,7 @@ const experiences: {
 }[] = [
   {
     name: "CleanHAUL",
-    logo: "/logos/cleanhaul.jpg",
+    logo: "/logos/cleanhaul.webp",
     date: "July 2026 to Present",
     role: "Systems Developer",
     summary:
@@ -18,7 +18,7 @@ const experiences: {
   },
   {
     name: "Asceoft",
-    logo: "/logos/asceoft.png",
+    logo: "/logos/asceoft.webp",
     date: "May to August 2026",
     role: "Lead Analyst \u00b7 Industry client project",
     summary:
@@ -27,7 +27,7 @@ const experiences: {
   },
   {
     name: "WTP Coffee",
-    logo: "/logos/wtp-coffee.png",
+    logo: "/logos/wtp-coffee.webp",
     date: "March to May 2026",
     role: "Freelance Shopify Developer",
     summary:
@@ -48,6 +48,8 @@ export function Experience() {
           <img
             className="company-logo"
             src={entry.logo}
+            loading="lazy"
+            decoding="async"
             alt=""
             width="25"
             height="25"

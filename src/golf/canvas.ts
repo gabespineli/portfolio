@@ -1,4 +1,5 @@
 import * as P from "./physics";
+import { unlockAudio as unlockSharedAudio } from "../audio";
 import { createPuttingStore, type Counts } from "./store";
 export function mountGolf(root: HTMLElement) {
   const events = new AbortController();
@@ -49,8 +50,7 @@ export function mountGolf(root: HTMLElement) {
   let audio: AudioContext | null = null;
   function unlockAudio() {
     try {
-      audio ??= new AudioContext();
-      void audio.resume().catch(() => {});
+      audio = unlockSharedAudio();
     } catch {
       /* Audio is optional. */
     }
@@ -767,6 +767,5 @@ export function mountGolf(root: HTMLElement) {
     clearInterval(poll);
     clearTimeout(resetTimer);
     cancelAnimationFrame(raf);
-    void audio?.close().catch(() => {});
   };
 }

@@ -3,6 +3,7 @@ import { Experience } from "./Experience";
 import { Golf } from "./golf/Golf";
 import { ProjectList } from "./Project";
 import { faviconBurst } from "./faviconBurst";
+import { playClick } from "./audio";
 export function Home() {
   const root = useRef<HTMLElement>(null);
   const interactiveClicks = useRef(0);
@@ -145,11 +146,12 @@ export function Home() {
                 </div>
                 <img
                   className="profile-photo"
-                  src="/profile.png"
+                  src="/profile.webp"
                   alt="Portrait of Gab Espineli"
                   width="400"
                   height="400"
                   fetchPriority="high"
+                  decoding="async"
                 />
               </div>
             </div>
@@ -171,7 +173,7 @@ export function Home() {
                 <span className="intro-label">
                   <img
                     className="intro-school-logo"
-                    src="/logos/dlsu.png"
+                    src="/logos/dlsu.webp"
                     alt=""
                     width="18"
                     height="18"
@@ -188,6 +190,7 @@ export function Home() {
                   type="button"
                   className="intro-label interactive-pill"
                   onClick={() => {
+                    playClick();
                     interactiveClicks.current += 1;
                     if (interactiveClicks.current === 5) {
                       burstController.current = new AbortController();
@@ -265,7 +268,9 @@ export function Home() {
               <h3>
                 <img
                   className="education-logo"
-                  src="/logos/dlsu.png"
+                  loading="lazy"
+                  decoding="async"
+                  src="/logos/dlsu.webp"
                   alt=""
                   width="25"
                   height="25"
@@ -281,7 +286,9 @@ export function Home() {
             <h3>
               <img
                 className="education-logo"
-                src="/logos/civi.png"
+                loading="lazy"
+                decoding="async"
+                src="/logos/civi.webp"
                 alt=""
                 width="25"
                 height="25"
@@ -298,7 +305,9 @@ export function Home() {
               <h3>
                 <img
                   className="education-logo"
-                  src="/logos/sprint.png"
+                loading="lazy"
+                decoding="async"
+                  src="/logos/sprint.webp"
                   alt=""
                   width="25"
                   height="25"
