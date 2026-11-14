@@ -210,8 +210,7 @@ export function Home() {
               </p>
               <p>
                 Have something in mind? I’ll help you work through the details
-                and turn it into software you can use. There’s a little golf
-                here, too.
+                and turn it into software you can use.
               </p>
               <p className={"intro-links"}>
                 <a href={"#work"}>{"Explore my work "}</a>
@@ -337,11 +336,12 @@ export function Home() {
         </h2>
         <div className={"section-content"}>
           <p>
-            I’m curious by default and easily pulled into the little details—how
-            something looks, feels, or could work a bit better. I like
-            tinkering, swapping ideas, and getting involved in student and
-            church activities. Sometimes that curiosity turns into a project;
-            sometimes it turns into a tiny putting green on my website.
+            I like trying things out and seeing where they go. That could mean
+            messing around with a website, swapping random ideas with friends,
+            or joining in on student and church activities. This is my first
+            portfolio, so I wanted it to feel a little like me. Sometimes that
+            curiosity turns into a project; sometimes it turns into a tiny
+            putting green on my website.
           </p>
         </div>
       </section>
