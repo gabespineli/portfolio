@@ -2,8 +2,18 @@ import { useEffect, useRef } from "react";
 import { Experience } from "./Experience";
 import { Golf } from "./golf/Golf";
 import { ProjectList } from "./Project";
+import { faviconBurst } from "./faviconBurst";
 export function Home() {
   const root = useRef<HTMLElement>(null);
+  const interactiveClicks = useRef(0);
+  const burstController = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      burstController.current?.abort();
+      document.documentElement.classList.remove("favicon-letters");
+    },
+    [],
+  );
   useEffect(() => {
     const sections = Array.from(
       root.current?.querySelectorAll<HTMLElement>(":scope > section") ?? [],
@@ -120,7 +130,7 @@ export function Home() {
         <h1 id={"hero-title"} className="sr-only">
           Gab Espineli
         </h1>
-        <div className={"hero-bottom"}>
+        <div className="hero-bottom hero-desktop">
           <figure className={"portrait"}>
             <div className="portrait-desktop">
               <div className="profile-window profile-preview">
@@ -173,7 +183,27 @@ export function Home() {
                   <img src="/web-app.svg" alt="" width="16" height="16" />
                   web apps
                 </span>
-                , storefronts, and interactive experiences.
+                {" and "}
+                <button
+                  type="button"
+                  className="intro-label interactive-pill"
+                  onClick={() => {
+                    interactiveClicks.current += 1;
+                    if (interactiveClicks.current === 5) {
+                      burstController.current = new AbortController();
+                      void faviconBurst(burstController.current.signal);
+                    }
+                  }}
+                >
+                  <img
+                    src="/interactive-cursor.svg"
+                    width="16"
+                    height="16"
+                    alt=""
+                  />
+                  interactive
+                </button>
+                {" experiences."}
               </p>
               <p>
                 Have something in mind? I’ll help you work through the details
